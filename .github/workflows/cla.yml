@@ -18,21 +18,21 @@ permissions:
 jobs:
   cla:
     runs-on: ubuntu-latest
+    # Ignora pull requests gerados por bots automatizados (Dependabot / Renovate)
+    if: github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]'
     steps:
-      # Comments on plain issues (the pinned CLA issue #554) are not pull requests: the action
-      # would look for a PR with that number and fail. Those are recorded by cla-issue.yml.
       - if: (github.event_name == 'issue_comment' && github.event.issue.pull_request && (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA')) || github.event_name == 'pull_request_target'
         uses: contributor-assistant/github-action@v2.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           path-to-signatures: signatures/cla.json
-          path-to-document: https://github.com/DuarteSantos8/openGym/blob/main/CLA.md
+          path-to-document: https://github.com/erxcola/ai-sports-coach/blob/main/CLA.md
           branch: cla-signatures
-          allowlist: DuarteSantos8,dependabot[bot],renovate[bot]
+          allowlist: erxcola,dependabot[bot],renovate[bot]
           custom-notsigned-prcomment: >
             Thanks for your pull request! Before it can be merged, please read the
-            [Contributor License Agreement](https://github.com/DuarteSantos8/openGym/blob/main/CLA.md)
+            [Contributor License Agreement](https://github.com/erxcola/ai-sports-coach/blob/main/CLA.md)
             and sign it by commenting the sentence below. It takes a second and covers all your
             past and future contributions.
           custom-allsigned-prcomment: All contributors have signed the CLA. Thank you!
