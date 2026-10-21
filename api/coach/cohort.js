@@ -51,7 +51,10 @@ function participant(S) {
   const since = isoDaysAgo(WEEKS_STRENGTH * 7);
   const sinceFreq = isoDaysAgo(WEEKS_FREQUENCY * 7);
   const toKg = S.unit === 'lb' ? LB_TO_KG : 1;
-  const workouts = (S.workouts || []).filter(w => w && w.d && w.d >= since);
+  let workouts = (S.workouts || []).filter(w => w && w.d && w.d >= since);
+  if (!workouts.length && (S.workouts || []).length) {
+    workouts = (S.workouts || []).filter(w => w && w.d);
+  }
   if (!workouts.length) return null;
   const best = {};
   workouts.forEach(w => (w.entries || []).forEach(en => {

@@ -229,7 +229,3 @@ function effectiveLang(S, config) {
   // Simplified - actual implementation in lib/default-lang.js
   return S.lang || 'en'
 }
-
-function baseLang(lang) {
-  return lang.split('-')[0].split('_')[0]
-}

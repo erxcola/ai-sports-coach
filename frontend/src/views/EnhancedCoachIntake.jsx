@@ -183,5 +183,3 @@ function Consent({ onAgree, onDecline }) {
     </>
   );
 }
-
-export default EnhancedCoachIntake;

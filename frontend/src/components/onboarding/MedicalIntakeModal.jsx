@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ALL_ORTHOPEDIC_CONDITIONS, OrthopedicCondition } from '../../../lib/types/biomechanics.js';
+import { ALL_ORTHOPEDIC_CONDITIONS, OrthopedicCondition } from '../../lib/types/biomechanics.js';
 
 const CONDITION_LABELS = {
   [OrthopedicCondition.SCOLIOSIS]: 'Escoliose',

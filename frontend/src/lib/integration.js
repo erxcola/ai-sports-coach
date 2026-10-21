@@ -9,6 +9,8 @@ import { NutritionCalculator, createNutritionCalculator } from './ai/nutrition-c
 import { WorkoutGenerator, createWorkoutGenerator } from './ai/workout-generator.js';
 import { ComputerVisionAnalyzer, createComputerVisionAnalyzer } from './ai/computer-vision.js';
 
+export { OrthopedicCondition, CONTRAINDICATED_MECHANICS, EXERCISE_BIOMECHANICS, ALL_ORTHOPEDIC_CONDITIONS };
+
 // Import openGym catalog (will be available in frontend context)
 // import { CATALOGUE, EXIDX } from '../../frontend/src/lib/exercises.js';
 

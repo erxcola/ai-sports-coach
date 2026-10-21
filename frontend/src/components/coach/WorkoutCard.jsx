@@ -123,7 +123,7 @@ export function WorkoutCard({ plan }) {
           <h4>📋 Regras de Progressão (baseado no openGym)</h4>
           <ul>
             <li>✅ <strong>Todas séries completas com RIR ≤ alvo</strong> → Aumentar carga (+2.5kg membros inferiores, +1.25kg superiores)</li>
-            <li>⚠️ <strong>Algumas séries falham (RIR > alvo)</strong> → Manter carga na próxima sessão</li>
+            <li>⚠️ <strong>Algumas séries falham (RIR &gt; alvo)</strong> → Manter carga na próxima sessão</li>
             <li>🔄 <strong>Falha consistente 2+ semanas</strong> → Deload -10% carga</li>
             <li>🚫 <strong>Dor articular / flag ortopédica</strong> → Não progredir, considerar regressão</li>
           </ul>

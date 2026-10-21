@@ -287,9 +287,12 @@ const effortOf = S => {
 /* ---------- window + aggregates ---------- */
 const iso = d => d.toISOString().slice(0, 10);
 
-export function reviewWindow(S, since) {
+export function reviewWindow(S, since, now = new Date()) {
   const all = (S.workouts || []).filter(w => w && w.d);
-  const cutoffDate = new Date(); cutoffDate.setDate(cutoffDate.getDate() - MAX_WEEKS * 7);
+  const latestWorkoutDate = all.length ? new Date(all[all.length - 1].d + 'T00:00:00Z') : now;
+  const refDate = (now - latestWorkoutDate > MAX_WEEKS * 7 * 86400000) ? latestWorkoutDate : now;
+  const cutoffDate = new Date(refDate);
+  cutoffDate.setDate(cutoffDate.getDate() - MAX_WEEKS * 7);
   const cutoff = iso(cutoffDate);
   const from = since && since > cutoff ? since : cutoff;
   return all.filter(w => w.d >= from).slice(-MAX_SESSIONS);

@@ -10,7 +10,7 @@ import {
   NutritionPlan,
   WorkoutPlan,
   OrthopedicCondition
-} from '../../../lib/integration.js';
+} from '../lib/integration.js';
 
 /**
  * Hook principal do AI Coach

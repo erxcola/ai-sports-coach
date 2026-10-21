@@ -2688,7 +2688,13 @@ export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w=
 /* ============================ calendar ============================ */
 function Calendar({ start, close }) {
   const st = useStore(s => s.S)
-  const [cur, setCur] = useState(() => { const d = start ? new Date(start) : new Date(); d.setDate(1); return d })
+  const [cur, setCur] = useState(() => {
+    if (typeof start === 'string' && /^\d{4}-\d{2}/.test(start)) {
+      const [sy, sm] = start.split('-')
+      return new Date(Number(sy), Number(sm) - 1, 1)
+    }
+    const d = start ? new Date(start) : new Date(); d.setDate(1); return d
+  })
   const y = cur.getFullYear(), mo = cur.getMonth()
   const byDay = {}
   st.workouts.forEach(w => {
