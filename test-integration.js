@@ -8,7 +8,7 @@ import {
   CONTRAINDICATED_MECHANICS,
   EXERCISE_BIOMECHANICS,
   ALL_ORTHOPEDIC_CONDITIONS
-} from './src/lib/types/biomechanics.js';
+} from './frontend/src/lib/types/biomechanics.js';
 
 import {
   BiomechanicalFilter,
@@ -16,22 +16,22 @@ import {
   filterExercisesForConditions,
   isExerciseSafe,
   getSafeAlternatives
-} from './src/lib/biomechanics/filter.js';
+} from './frontend/src/lib/biomechanics/filter.js';
 
 import {
   NutritionCalculator,
   createNutritionCalculator
-} from './src/lib/ai/nutrition-calculator.js';
+} from './frontend/src/lib/ai/nutrition-calculator.js';
 
 import {
   WorkoutGenerator,
   createWorkoutGenerator
-} from './src/lib/ai/workout-generator.js';
+} from './frontend/src/lib/ai/workout-generator.js';
 
 import {
   ComputerVisionAnalyzer,
   createComputerVisionAnalyzer
-} from './src/lib/ai/computer-vision.js';
+} from './frontend/src/lib/ai/computer-vision.js';
 
 import {
   IntegrationLayer,
@@ -42,7 +42,7 @@ import {
   CoachRecommendations,
   initIntegration,
   setupCoachIntegration
-} from './src/lib/integration.js';
+} from './frontend/src/lib/integration.js';
 
 console.log('🧪 INICIANDO TESTE DE INTEGRAÇÃO DO AI COACH\n');
 

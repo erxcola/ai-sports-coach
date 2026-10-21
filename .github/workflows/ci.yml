@@ -8,8 +8,6 @@ on:
 
 env:
   NODE_VERSION: '22'
-  # Cache key prefix for dependencies
-  CACHE_PREFIX: ${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('frontend/package-lock.json') }}
 
 jobs:
   # ============================================
