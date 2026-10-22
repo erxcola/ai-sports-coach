@@ -203,18 +203,20 @@ export function _setDetails(newEnInstr, newEnDescs, newDescs, forLang = lang) {
 export const exerciseNameFor = ex => {
   // A language that chose "English names only" sees the canonical catalogue title, not the
   // translation — and never the parenthetical either. Custom exercises keep their exact name.
-  if (enOnly) return ex?.n || ''
+  if (enOnly) return ex?.n || ex?.name || ex?.id || ''
   const translated = exerciseNames && ex && exerciseNames[ex.id]
-  if (!translated) return ex?.n || ''
+  if (!translated) return ex?.n || ex?.name || ex?.id || ''
+  const enName = ex?.n || ex?.name || ''
+  if (!enName) return translated
   // Some names (Burpee, Pilates, brand/model terms) are the established term in the target
   // language too. Repeating an identical loanword in parentheses adds noise rather than
   // context. Compared in the active language's own casing rules, not hardcoded to one —
   // this only ever differs from ordinary casing for languages with locale-specific rules
   // (e.g. Turkish dotless i), which does not include any language shipped here today.
-  return translated.toLocaleLowerCase(lang) === ex.n.toLocaleLowerCase('en')
+  return translated.toLocaleLowerCase(lang) === enName.toLocaleLowerCase('en')
       || !enParens
     ? translated
-    : `${translated} (${ex.n})`
+    : `${translated} (${enName})`
 }
 
 // Exercise-name packs written in the language's own casing. German capitalises its nouns and

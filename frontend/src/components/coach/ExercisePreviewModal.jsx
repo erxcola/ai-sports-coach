@@ -27,7 +27,12 @@ export function ExercisePreviewModal({ exercise, isOpen, onClose }) {
 
         {/* Video / Animated Media Player */}
         <div style={{ background: '#000', minHeight: 260, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <Media ex={exercise} />
+          <Media ex={{
+            ...exercise,
+            id: exercise.id || '0025',
+            n: exercise.n || exercise.name || exercise.ptName || 'exercise',
+            gif: exercise.gif || `${exercise.id || '0025'}.mp4`
+          }} />
         </div>
 
         {/* Instructions and Execution Tips */}

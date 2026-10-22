@@ -23,7 +23,9 @@ export function WorkoutCard({ plan }) {
   const handleOpenPreview = (exercise) => {
     const matched = findCatalogueExercise(exercise.name);
     setPreviewExercise({
+      ...(matched || {}),
       ...exercise,
+      n: matched?.n || exercise.name,
       ptName: exercise.name,
       id: matched?.id || '0025',
       gif: matched?.gif || '0025.mp4',
