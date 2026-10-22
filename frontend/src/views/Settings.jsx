@@ -366,6 +366,24 @@ export default function Settings({ page = null, find = null, via = null }) {
     confirmText: t('Sign out everywhere'), danger: true,
     onConfirm: () => leave('everywhere', t('Signed out on all devices')),
   })
+
+  const handleSignOutMobile = () => confirmSheet({
+    title: t('Sair da conta e desconectar?'),
+    message: t('Seu aparelho será desconectado e voltará para a tela inicial de boas-vindas, onde você pode conectar a outra conta ou servidor.'),
+    confirmText: t('Sair da Conta'),
+    danger: true,
+    onConfirm: async () => {
+      try {
+        await useStore.getState().disconnectServer?.({ force: true })
+      } catch (e) {
+        console.warn('Disconnect error:', e)
+      }
+      useStore.setState({ needsMobileOnboarding: true, user: null })
+      localStorage.removeItem('aiCoachProfile')
+      nav('/home')
+      toast(t('Sessão encerrada com sucesso'))
+    }
+  })
   // Signed in, the empty state is pushed to the profile like any other change, so the wipe
   // reaches the server and every device that syncs with it — the dialog has to say so. The Coach
   // keeps its data outside S in two homes that can both be in use on one phone: a file per
@@ -845,7 +863,7 @@ export default function Settings({ page = null, find = null, via = null }) {
         {MOBILE && <>
           {user.admin && <Row icon="crown" iconTint="var(--indigo)" title={t('Admin dashboard')} accessory="chevron" onClick={() => nav('/admin')} />}
           <AccountIdRow id={user.id} />
-          <Row icon="signOut" iconTint="var(--red)" title={t('Disconnect')} danger onClick={disconnect} />
+          <Row icon="signOut" iconTint="var(--red)" title={t('Desconectar / Sair da Conta')} subtitle={t('Desconecta deste servidor e desloga')} danger onClick={handleSignOutMobile} />
         </>}
       </ServerSyncSection>}
 
@@ -855,6 +873,7 @@ export default function Settings({ page = null, find = null, via = null }) {
           <Row icon="lock" iconTint="var(--acc)" title={t('All data stays on this phone')} subtitle={t('No account, no cloud. Back it up anytime in Data & backup.')} />
           <Row icon="cloud" iconTint="var(--indigo)" title={t('Connect to my server')} subtitle={t('Sync this device to your own self-hosted openGym instead.')} accessory="chevron"
             onClick={connectServer} />
+          <Row icon="signOut" iconTint="var(--red)" title={t('Sair / Trocar de Conta')} subtitle={t('Volta para a tela de boas-vindas para conectar ao servidor')} danger onClick={handleSignOutMobile} />
           <KeptChangesRows />
         </> : DEMO ? <>
           <Row icon="info" iconTint="var(--acc)" title={t('You’re in the demo')} subtitle={t('Example data, stored only in this browser. Go wild and change anything you like.')} />
