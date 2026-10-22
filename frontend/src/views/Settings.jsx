@@ -906,6 +906,9 @@ export default function Settings({ page = null, find = null, via = null }) {
           <KeptChangesRows />
         </> : <>
           <Row icon="lock" iconTint="var(--grey)" title={t('Passkeys not supported in this browser.')} />
+          <Row icon="cloud" iconTint="var(--indigo)" title={t('Conectar ao Servidor')} subtitle={t('Sincronize com o servidor openGym no computador.')} accessory="chevron"
+            onClick={connectServer} />
+          <Row icon="signOut" iconTint="var(--red)" title={t('Sair / Desconectar')} subtitle={t('Limpa a sessão local')} danger onClick={handleSignOutMobile} />
           <KeptChangesRows />
         </>}
       </Section>}

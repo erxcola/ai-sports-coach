@@ -170,7 +170,7 @@ function Shell() {
     <>
       <div id="app" className="vfade" key={loc.pathname}>
         <ErrorBoundary>
-          {!authed ? <Login /> : needsMobileOnboarding ? <MobileOnboarding /> : (
+          {needsMobileOnboarding ? <MobileOnboarding /> : !authed ? <Login /> : (
             <Routes>
               <Route path="/home" element={<Home />} />
               {S.checkIn !== false && <Route path="/checkin" element={<CheckIn />} />}

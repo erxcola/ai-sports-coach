@@ -11,6 +11,7 @@ import { Button, Segmented } from '../components/ui.jsx'
 import { askAddDeviceData } from '../sheets.jsx'
 import { passwordOn, PasswordRegisterForm, openPasswordSignIn } from '../components/PasswordAuth.jsx'
 import { openDeviceLinkRedeem } from '../components/Passkeys.jsx'
+import { ConnectSheet } from './MobileOnboarding.jsx'
 
 function RegisterSheet({ close }) {
   const { setUser, pushState, pullState, loadConfig } = useStore()
@@ -109,6 +110,8 @@ export default function Login() {
             its own (#95), instead of a new, empty profile. */}
         <div style={{ height: 10 }} />
         <Button variant="ghost" className="dim" icon="qr" onClick={openDeviceLinkRedeem}>{t('Use a code from your other device')}</Button>
+        <div style={{ height: 10 }} />
+        <Button icon="cloud" onClick={() => useUI.getState().openSheet(close => <ConnectSheet close={close} />)}>{t('Conectar ao Servidor')}</Button>
         {canGuest && <div style={{ height: 4 }} />}
       </> : pwOn ? <>
         {/* Plain http on a LAN address, or a browser without passkey support: the password is
@@ -117,12 +120,19 @@ export default function Login() {
         <Button variant="primary" icon="key" onClick={() => openPasswordSignIn()}>{t('Sign in with password')}</Button>
         <div style={{ height: 10 }} />
         <Button icon="plusCircle" onClick={register}>{t('Create new profile')}</Button>
+        <div style={{ height: 10 }} />
+        <Button icon="cloud" onClick={() => useUI.getState().openSheet(close => <ConnectSheet close={close} />)}>{t('Conectar ao Servidor')}</Button>
         {canGuest && <div style={{ height: 10 }} />}
-      </> : <div className="card small muted" style={{ textAlign: 'start' }}>{canGuest
-        ? t("This browser doesn't do passkeys, but you can still use openGym locally on this device.")
-        // Without passkeys and without the guest entrance there is no way in from this browser,
-        // so say that plainly instead of offering a local profile that cannot be created.
-        : t("This browser doesn't support passkeys, and this instance requires an account. Try a browser or device with passkey support.")}</div>}
+      </> : <>
+        <div className="card small muted" style={{ textAlign: 'start' }}>{canGuest
+          ? t("This browser doesn't do passkeys, but you can still use openGym locally on this device.")
+          // Without passkeys and without the guest entrance there is no way in from this browser,
+          // so say that plainly instead of offering a local profile that cannot be created.
+          : t("This browser doesn't support passkeys, and this instance requires an account. Try a browser or device with passkey support.")}</div>
+        <div style={{ height: 12 }} />
+        <Button variant="primary" icon="cloud" onClick={() => useUI.getState().openSheet(close => <ConnectSheet close={close} />)}>{t('Conectar ao Servidor')}</Button>
+        {canGuest && <div style={{ height: 10 }} />}
+      </>}
       {canGuest && <Button variant="ghost" className="dim" onClick={() => setGuest(true)}>{t('Continue without account')}</Button>}
       <div className="dim small" style={{ marginTop: 26, lineHeight: 1.5 }}>{pwOn ? t('Passkeys use {0}. A password works too, where passkeys do not.', bio()) : t('Passkeys use {0}. No passwords to remember.', bio())}<br />{t('Each profile keeps its own plan, workouts & body weight.')}</div>
     </div>
