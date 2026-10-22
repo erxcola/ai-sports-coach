@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { SafetyCard } from './SafetyCard';
 import { NutritionCard } from './NutritionCard';
 import { WorkoutCard } from './WorkoutCard';
+import { CardioCard } from './CardioCard';
 import { PostureCard } from './PostureCard';
 
 export function CoachDashboard({ recommendations, api, onRetakePhotos }) {
@@ -27,6 +28,7 @@ export function CoachDashboard({ recommendations, api, onRetakePhotos }) {
     { id: 'safety', label: 'Segurança', icon: '🛡️' },
     { id: 'nutrition', label: 'Nutrição', icon: '🥗' },
     { id: 'workout', label: 'Treino', icon: '🏋️' },
+    { id: 'cardio', label: 'Cardio & Relógio', icon: '🏃' },
     { id: 'posture', label: 'Postura', icon: '👁️' }
   ];
 
@@ -68,6 +70,13 @@ export function CoachDashboard({ recommendations, api, onRetakePhotos }) {
             <span className="stat-label">{recommendations.workoutPlan?.weeklyFrequency}x/semana</span>
           </div>
         </div>
+        <div className="stat-card cardio">
+          <span className="stat-icon">🏃</span>
+          <div className="stat-info">
+            <span className="stat-value">{recommendations.cardioPlan?.weeklyFrequency || 3}x/semana</span>
+            <span className="stat-label">{recommendations.cardioPlan?.targetZone?.name || 'Zona 2'}</span>
+          </div>
+        </div>
         <div className="stat-card posture">
           <span className="stat-icon">👁️</span>
           <div className="stat-info">
@@ -98,6 +107,9 @@ export function CoachDashboard({ recommendations, api, onRetakePhotos }) {
             <SafetyCard assessment={recommendations.safetyAssessment} />
             <NutritionCard plan={recommendations.nutritionPlan} />
             <WorkoutCard plan={recommendations.workoutPlan} />
+            {recommendations.cardioPlan && (
+              <CardioCard cardioPlan={recommendations.cardioPlan} userProfile={recommendations.userProfile} />
+            )}
             {recommendations.computerVision && (
               <PostureCard
                 analysis={recommendations.computerVision}
@@ -122,6 +134,12 @@ export function CoachDashboard({ recommendations, api, onRetakePhotos }) {
         {activeTab === 'workout' && (
           <div className="single-card">
             <WorkoutCard plan={recommendations.workoutPlan} />
+          </div>
+        )}
+
+        {activeTab === 'cardio' && (
+          <div className="single-card">
+            <CardioCard cardioPlan={recommendations.cardioPlan} userProfile={recommendations.userProfile} />
           </div>
         )}
 

@@ -443,8 +443,54 @@ try {
   const cvResult = await api.analyzePhysique({ front: 'mock', side: '', back: '' });
   console.log('   ✓ analyzePhysique - Flags:', cvResult.orthopedic_risk_flags.length);
 
+  // Testar getCardioPlan
+  const cardioResult = api.getCardioPlan(testProfile);
+  console.log('   ✓ getCardioPlan - Protocolo:', cardioResult.protocolType);
+  console.log('   ✓ getCardioPlan - Frequência:', cardioResult.weeklyFrequency, 'x/semana');
+  console.log('   ✓ getCardioPlan - Modalidade:', cardioResult.primaryModality.name);
+
 } catch (e) {
   console.error('   ❌ Erro na API setup:', e.message, e.stack);
+}
+console.log();
+
+// ============================================
+// TESTE 8: CARDIO ENGINE & WEARABLE INTEGRATION
+// ============================================
+console.log('8️⃣ Testando Cardio Engine & Wearable Integration...');
+try {
+  const { CardioEngine, BluetoothHeartRateMonitor } = await import('./frontend/src/lib/integration.js');
+
+  // Testar Zonas Cardíacas
+  const zones = CardioEngine.calculateHeartRateZones(30, 60);
+  console.log('   ✓ Zonas Cardíacas (Tanaka/Karvonen) - FCmax:', zones.maxHR, 'BPM');
+  console.log('   ✓ Zona 2 (FatMax) faixa:', zones.zone2.bpmRange[0], '-', zones.zone2.bpmRange[1], 'BPM');
+
+  // Testar Filtro de Segurança para Lesão no Joelho
+  const kneeFiltered = CardioEngine.filterSafeModalities(['patellar_tendinitis']);
+  const kneeAvoidedNames = kneeFiltered.avoidedModalities.map(m => m.name);
+  console.log('   ✓ Lesão no Joelho - Modalidades evitadas:', kneeAvoidedNames.length, 'itens');
+  console.log('   ✓ Modalidade segura recomendada:', kneeFiltered.safeModalities[0]?.name);
+
+  // Testar Prescrição de Cutting (Fat Loss)
+  const cuttingCardio = CardioEngine.prescribeCardio({
+    goal: 'fat_loss',
+    age: 26,
+    bodyWeight: 80,
+    orthopedicConditions: ['lumbar_disc_herniation'],
+    trainingDaysPerWeek: 4
+  });
+  console.log('   ✓ Prescrição Cutting - Duração:', cuttingCardio.sessionDurationMin, 'min/sessão');
+  console.log('   ✓ Prescrição Cutting - Gasto estimado por sessão:', cuttingCardio.calorieBurnPerSessionEst, 'kcal');
+  console.log('   ✓ Prescrição Cutting - Meta NEAT:', cuttingCardio.neatStepsTarget, 'passos');
+
+  // Testar Monitor Cardíaco e Fórmula de Keytel
+  const btm = new BluetoothHeartRateMonitor({ age: 26, weightKg: 80, gender: 'male' });
+  btm.updateCalories(140); // 140 BPM
+  console.log('   ✓ Monitor BLE inicializado, cálculo calórico ativo funcional:', btm.totalCaloriesExpended > 0);
+
+} catch (e) {
+  console.error('   ❌ Erro no teste de Cardio:', e.message, e.stack);
 }
 console.log();
 

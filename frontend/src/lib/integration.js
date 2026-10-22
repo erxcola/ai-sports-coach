@@ -8,8 +8,10 @@ import { OrthopedicCondition, CONTRAINDICATED_MECHANICS, EXERCISE_BIOMECHANICS, 
 import { NutritionCalculator, createNutritionCalculator } from './ai/nutrition-calculator.js';
 import { WorkoutGenerator, createWorkoutGenerator } from './ai/workout-generator.js';
 import { ComputerVisionAnalyzer, createComputerVisionAnalyzer } from './ai/computer-vision.js';
+import { CardioEngine, CARDIO_MODALITIES } from './ai/cardio-engine.js';
+import { BluetoothHeartRateMonitor } from './wearables/bluetooth-heartrate.js';
 
-export { OrthopedicCondition, CONTRAINDICATED_MECHANICS, EXERCISE_BIOMECHANICS, ALL_ORTHOPEDIC_CONDITIONS };
+export { OrthopedicCondition, CONTRAINDICATED_MECHANICS, EXERCISE_BIOMECHANICS, ALL_ORTHOPEDIC_CONDITIONS, CardioEngine, CARDIO_MODALITIES, BluetoothHeartRateMonitor };
 
 // Import openGym catalog (will be available in frontend context)
 // import { CATALOGUE, EXIDX } from '../../frontend/src/lib/exercises.js';
@@ -105,6 +107,7 @@ export class CoachRecommendations {
     this.safetyAssessment = data.safetyAssessment || new SafetyAssessment();
     this.nutritionPlan = data.nutritionPlan || new NutritionPlan();
     this.workoutPlan = data.workoutPlan || new WorkoutPlan();
+    this.cardioPlan = data.cardioPlan || null;
     this.computerVision = data.computerVision || null;
   }
 }
@@ -137,7 +140,17 @@ export class IntegrationLayer {
     // 3. Plano de treino
     const workoutPlan = this.generateWorkoutPlan(profile, safetyAssessment);
 
-    // 4. Análise de visão computacional (se houver imagem)
+    // 4. Prescrição de cardio clínico e aeróbio (ISSN / ACSM)
+    const cardioPlan = CardioEngine.prescribeCardio({
+      goal: profile.goals?.[0] || 'hypertrophy',
+      age: profile.age || 28,
+      bodyWeight: profile.weight || 75,
+      restingHeartRate: profile.restingHeartRate || 65,
+      orthopedicConditions: profile.orthopedicConditions || [],
+      trainingDaysPerWeek: this.determineTrainingDays(profile.orthopedicConditions)
+    });
+
+    // 5. Análise de visão computacional (se houver imagem)
     let computerVision = null;
     if (profileImage) {
       computerVision = await this.analyzePosture(profileImage);
@@ -147,6 +160,7 @@ export class IntegrationLayer {
       safetyAssessment,
       nutritionPlan,
       workoutPlan,
+      cardioPlan,
       computerVision
     });
   }
@@ -384,12 +398,28 @@ export function setupCoachIntegration(onRecommendationsChange) {
     analyzePhysique: (images) =>
       integration.computerVision.analyzePhysique(images),
 
+    /**
+     * Prescrição de cardio clínico e aeróbio
+     */
+    getCardioPlan: (profile) =>
+      CardioEngine.prescribeCardio({
+        goal: profile.goals?.[0] || 'hypertrophy',
+        age: profile.age || 28,
+        bodyWeight: profile.weight || 75,
+        restingHeartRate: profile.restingHeartRate || 65,
+        orthopedicConditions: profile.orthopedicConditions || [],
+        trainingDaysPerWeek: integration.determineTrainingDays(profile.orthopedicConditions)
+      }),
+
     // Expor classes para uso direto
     IntegrationLayer,
     UserProfile,
     SafetyAssessment,
     NutritionPlan,
     WorkoutPlan,
+    CardioEngine,
+    CARDIO_MODALITIES,
+    BluetoothHeartRateMonitor,
     CoachRecommendations,
     OrthopedicCondition,
     CONTRAINDICATED_MECHANICS,
@@ -407,6 +437,9 @@ export default {
   SafetyAssessment,
   NutritionPlan,
   WorkoutPlan,
+  CardioEngine,
+  CARDIO_MODALITIES,
+  BluetoothHeartRateMonitor,
   CoachRecommendations,
   OrthopedicCondition,
   CONTRAINDICATED_MECHANICS,
