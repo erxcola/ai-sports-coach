@@ -4,12 +4,76 @@
 /* ============================================
    CONTAINER & LAYOUT
    ============================================ */
+.ai-coach-native-page,
+.coach-native-wrap {
+  width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 80px;
+}
+
+/* 4-Metric Compact Strip for Mobile */
+.coach-metrics-strip {
+  display: flex;
+  justify-content: space-between;
+  background: var(--surface);
+  border: var(--hair) solid var(--sep-op);
+  border-radius: 12px;
+  padding: 10px 8px;
+  margin-bottom: 14px;
+  gap: 4px;
+}
+
+.c-metric-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.c-metric-item.clickable {
+  cursor: pointer;
+}
+
+.c-metric-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--label);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.c-metric-val.highlight {
+  color: var(--acc);
+}
+
+.c-metric-lbl {
+  font-size: 10.5px;
+  color: var(--label-2);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.overview-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .ai-coach-app,
 .coach-dashboard {
   background: var(--bg);
   color: var(--label);
-  padding: 16px;
-  max-width: 900px;
+  padding: 0;
+  max-width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
   font-family: inherit;

@@ -1,11 +1,13 @@
 // src/frontend/src/components/coach/CoachDashboard.jsx
-// Dashboard do AI Coach integrado com openGym, importação direta de treinos/dieta e avaliação de mobilidade.
+// Dashboard do AI Coach integrado nativamente ao design system do openGym.
+// Elimina headers duplicados, espacamento excessivo e textos cortados em telas de celular.
 
 import React, { useState } from 'react';
+import { Section, Row, Segmented, Button } from '../ui.jsx';
+import Icon from '../Icon.jsx';
 import { SafetyCard } from './SafetyCard';
 import { NutritionCard } from './NutritionCard';
 import { WorkoutCard } from './WorkoutCard';
-import { PostureCard } from './PostureCard';
 import { CardioCard } from './CardioCard';
 import { MobilityTestModal } from './MobilityTestModal';
 import { importAICoachToOpenGym } from '../../lib/ai/plan-importer.js';
@@ -19,15 +21,14 @@ export function CoachDashboard({ recommendations, onRetakePhotos, api }) {
   const [imported, setImported] = useState(false);
 
   const mobilityAssessment = useStore(s => s.S?.mobilityAssessment);
-  const dietPlanStored = useStore(s => s.S?.dietPlan);
 
   if (!recommendations) {
     return (
-      <div className="coach-dashboard empty">
-        <div className="empty-state">
-          <div className="empty-icon">📋</div>
-          <h2>Nenhuma recomendação ainda</h2>
-          <p>Complete o onboarding médico para gerar seu plano personalizado</p>
+      <div className="empty" style={{ paddingTop: '30vh' }}>
+        <div className="ico"><Icon name="sparkles" /></div>
+        Nenhuma avaliação encontrada.<br />
+        <div style={{ marginTop: 12 }}>
+          <Button variant="primary" onClick={onRetakePhotos}>Iniciar Avaliação AI Coach</Button>
         </div>
       </div>
     );
@@ -44,305 +45,214 @@ export function CoachDashboard({ recommendations, onRetakePhotos, api }) {
         orthopedicAdjustments: mobilityAssessment?.workoutAdjustments || []
       });
       setImported(true);
-      useUI.getState().toast(`${res.routineCount} treinos e plano alimentar importados para o openGym!`);
+      useUI.getState().toast(`${res.routineCount} treinos e plano alimentar sincronizados no openGym!`);
     } catch (e) {
       console.error('Import error:', e);
-      useUI.getState().toast('Erro ao importar para o openGym');
+      useUI.getState().toast('Erro ao sincronizar com o openGym');
     } finally {
       setIsImporting(false);
     }
   };
 
-  const tabs = [
-    { id: 'overview', label: 'Visão Geral', icon: '📊' },
-    { id: 'workout', label: 'Treino', icon: '🏋️' },
-    { id: 'nutrition', label: 'Nutrição', icon: '🥗' },
-    { id: 'cardio', label: 'Cardio', icon: '🏃' },
-    { id: 'mobility', label: 'Mobilidade & Vídeo', icon: '📹' },
-    { id: 'safety', label: 'Segurança', icon: '🛡️' },
-    { id: 'posture', label: 'Postura', icon: '👁️' }
-  ];
+  const diet = recommendations.nutritionPlan;
+  const workout = recommendations.workoutPlan;
+  const cardio = recommendations.cardioPlan;
 
   return (
-    <div className="coach-dashboard">
-      {/* Header */}
-      <div className="dashboard-header">
-        <div className="header-left">
-          <h1>🤖 Seu AI Sports Coach</h1>
-          <p className="subtitle">Prescrição biomecânica, metabólica e funcional integrada</p>
+    <div className="coach-native-wrap">
+      {/* Native Compact Header */}
+      <div className="hdr" style={{ marginBottom: 12 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: '0 0 2px' }}>AI Sports Coach</h1>
+          <div className="sub" style={{ fontSize: 13, color: 'var(--label-2)' }}>
+            Prescrição individualizada & biomecânica
+          </div>
         </div>
-        <div className="header-right">
-          <span className="last-updated">
-            Atualizado: {new Date().toLocaleDateString('pt-BR')}
+        <div className="hdr-actions">
+          <Button size="sm" variant="tinted" icon="repeat" onClick={onRetakePhotos}>
+            Refazer
+          </Button>
+        </div>
+      </div>
+
+      {/* 4-Metric Compact Strip */}
+      <div className="coach-metrics-strip">
+        <div className="c-metric-item">
+          <span className="c-metric-val">{workout?.splitType || 'ABC'}</span>
+          <span className="c-metric-lbl">Treino ({workout?.weeklyFrequency || 3}x/sem)</span>
+        </div>
+        <div className="c-metric-item">
+          <span className="c-metric-val">{diet?.caloricTarget || 2200}</span>
+          <span className="c-metric-lbl">kcal / dia</span>
+        </div>
+        <div className="c-metric-item">
+          <span className="c-metric-val">{cardio?.weeklyMinutes || 120}</span>
+          <span className="c-metric-lbl">min Cardio</span>
+        </div>
+        <div className="c-metric-item clickable" onClick={() => setMobilityModalOpen(true)}>
+          <span className="c-metric-val highlight">
+            {mobilityAssessment ? `${mobilityAssessment.score}/100` : 'Testar'}
           </span>
+          <span className="c-metric-lbl">Mobilidade</span>
         </div>
       </div>
 
-      {/* Sync / Import Call-to-Action Bar */}
-      <div className="import-action-banner">
-        <div className="banner-info">
-          <span className="banner-badge">Sincronização Nativa</span>
-          <h3>{imported ? '✓ Treinos & Dieta Sincronizados' : 'Importar Plano para o openGym'}</h3>
-          <p>Transfere automaticamente as rotinas, repetições, metas calóricas e mobilidade para o seu diário de treino.</p>
-        </div>
-        <button
-          className={`import-btn ${imported ? 'success' : 'primary'}`}
+      {/* 1-Tap Sync to openGym Row */}
+      <Section style={{ marginBottom: 14 }}>
+        <Row
+          icon="sparkles"
+          iconTint="var(--acc)"
+          title={imported ? "Treinos e Dieta Sincronizados no openGym" : "Importar Treinos & Dieta para o openGym"}
+          subtitle="Gera as rotinas na aba Plano e salva as metas nutricionais"
+          accessory={imported ? "check" : "chevron"}
           onClick={handleImportToOpenGym}
-          disabled={isImporting}
-        >
-          {isImporting ? 'Importando...' : imported ? '✓ Atualizar no openGym' : '📥 Importar Tudo para openGym'}
-        </button>
-      </div>
+        />
+      </Section>
 
-      {/* Quick Stats Bar */}
-      <div className="quick-stats">
-        <div className="stat-card workout">
-          <span className="stat-icon">🏋️</span>
-          <div className="stat-info">
-            <span className="stat-value">{recommendations.workoutPlan?.splitType || 'ABC'}</span>
-            <span className="stat-label">{recommendations.workoutPlan?.weeklyFrequency || 3}x/semana</span>
-          </div>
-        </div>
-        <div className="stat-card nutrition">
-          <span className="stat-icon">🥗</span>
-          <div className="stat-info">
-            <span className="stat-value">{recommendations.nutritionPlan?.caloricTarget?.toLocaleString()} kcal</span>
-            <span className="stat-label">{getStrategyLabel(recommendations.nutritionPlan?.strategy)}</span>
-          </div>
-        </div>
-        <div className="stat-card cardio">
-          <span className="stat-icon">🏃</span>
-          <div className="stat-info">
-            <span className="stat-value">{recommendations.cardioPlan?.weeklyMinutes || 120} min</span>
-            <span className="stat-label">{recommendations.cardioPlan?.modality || 'Zona 2'}</span>
-          </div>
-        </div>
-        <div className="stat-card mobility-stat" onClick={() => setMobilityModalOpen(true)}>
-          <span className="stat-icon">📹</span>
-          <div className="stat-info">
-            <span className="stat-value">{mobilityAssessment ? `${mobilityAssessment.score}/100` : 'Testar'}</span>
-            <span className="stat-label">Mobilidade Funcional</span>
-          </div>
-        </div>
-        <div className="stat-card safety">
-          <span className="stat-icon">{getRiskIcon(recommendations.safetyAssessment?.riskLevel)}</span>
-          <div className="stat-info">
-            <span className="stat-value">{getRiskLabel(recommendations.safetyAssessment?.riskLevel)}</span>
-            <span className="stat-label">Risco Ortopédico</span>
-          </div>
-        </div>
-      </div>
+      {/* Native Tab Segmented Control */}
+      <Segmented
+        className="plan-views"
+        style={{ marginBottom: 16 }}
+        value={activeTab}
+        onChange={setActiveTab}
+        options={[
+          { value: 'overview', label: 'Resumo' },
+          { value: 'workout', label: 'Treino' },
+          { value: 'nutrition', label: 'Dieta' },
+          { value: 'cardio', label: 'Cardio' },
+          { value: 'mobility', label: 'Mobilidade' }
+        ]}
+      />
 
-      {/* Tab Navigation */}
-      <div className="tab-navigation">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            <span className="tab-icon">{tab.icon}</span>
-            <span className="tab-label">{tab.label}</span>
-          </button>
-        ))}
-      </div>
+      {/* TAB 1: OVERVIEW (Resumo Compacto) */}
+      {activeTab === 'overview' && (
+        <div className="overview-flow">
+          {/* Workout Summary */}
+          <Section title="Treino Prescrito" footer="Rotinas adaptadas para hipertrofia sem sobrecarga articular lesiva.">
+            <Row
+              icon="dumbbell"
+              iconTint="var(--orange)"
+              title={`Divisão: ${workout?.splitType || 'Personalizada'} (${workout?.weeklyFrequency || 3} dias)`}
+              subtitle={`${workout?.routines?.length || 3} rotinas estruturadas com progressão dupla`}
+              accessory="chevron"
+              onClick={() => setActiveTab('workout')}
+            />
+          </Section>
 
-      {/* Tab Content */}
-      <div className="tab-content">
-        {activeTab === 'overview' && (
-          <div className="overview-grid">
-            <div className="coach-card mobility-promo-card">
-              <div className="card-header">
-                <h3>📹 Avaliação de Mobilidade por Vídeo</h3>
-                <span className="badge badge-accent">Inteligência Biomecânica</span>
-              </div>
-              <p className="card-desc">
-                Grave um teste rápido de 6 segundos com sua câmera. A IA analisa seus ângulos articulares de agachamento e dorsiflexão para blindar seus treinos.
-              </p>
-              {mobilityAssessment && (
-                <div className="mobility-score-preview">
-                  <strong>Último Score: {mobilityAssessment.score}/100</strong> — {mobilityAssessment.level}
-                </div>
-              )}
-              <button className="btn-primary" onClick={() => setMobilityModalOpen(true)}>
-                {mobilityAssessment ? 'Refazer Teste de Mobilidade' : 'Iniciar Avaliação com Câmera (6s)'}
-              </button>
-            </div>
+          {/* Nutrition Summary */}
+          <Section title="Metas Nutricionais" footer="Distribuição de macronutrientes calculada para seu biotipo e meta.">
+            <Row
+              icon="scale"
+              iconTint="var(--blue)"
+              title={`Meta Diária: ${diet?.caloricTarget || 2200} kcal`}
+              subtitle={`Proteínas: ${diet?.macros?.proteinGrams || 160}g · Carboidratos: ${diet?.macros?.carbGrams || 220}g · Gorduras: ${diet?.macros?.fatGrams || 65}g`}
+              accessory="chevron"
+              onClick={() => setActiveTab('nutrition')}
+            />
+          </Section>
 
-            <WorkoutCard plan={recommendations.workoutPlan} />
-            <NutritionCard plan={recommendations.nutritionPlan} />
-            {recommendations.cardioPlan && (
-              <CardioCard cardioPlan={recommendations.cardioPlan} userProfile={recommendations.userProfile} />
+          {/* Cardio & Mobility Summary */}
+          <Section title="Condicionamento & Biomecânica">
+            <Row
+              icon="flame"
+              iconTint="var(--pink)"
+              title={`Cardio: ${cardio?.modality || 'Caminhada Inclinada'} (${cardio?.weeklyMinutes || 120} min/sem)`}
+              subtitle={`Zona 2 (${cardio?.targetBpmRange || '120-138 BPM'})`}
+              accessory="chevron"
+              onClick={() => setActiveTab('cardio')}
+            />
+            <Row
+              icon="camera"
+              iconTint="var(--acc)"
+              title={mobilityAssessment ? `Mobilidade: Score ${mobilityAssessment.score}/100` : "Avaliação de Mobilidade por Vídeo"}
+              subtitle={mobilityAssessment ? mobilityAssessment.level : "Grave 6 segundos com sua câmera para mapear restrições articulares"}
+              accessory="chevron"
+              onClick={() => setMobilityModalOpen(true)}
+            />
+          </Section>
+        </div>
+      )}
+
+      {/* TAB 2: WORKOUT DETAIL */}
+      {activeTab === 'workout' && (
+        <div>
+          <WorkoutCard plan={recommendations.workoutPlan} />
+          <div style={{ marginTop: 12 }}>
+            <Button variant="primary" onClick={handleImportToOpenGym} style={{ width: '100%', padding: '12px' }}>
+              📥 Sincronizar estes Treinos no openGym
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: NUTRITION DETAIL */}
+      {activeTab === 'nutrition' && (
+        <div>
+          <NutritionCard plan={recommendations.nutritionPlan} />
+          <div style={{ marginTop: 12 }}>
+            <Button variant="primary" onClick={handleImportToOpenGym} style={{ width: '100%', padding: '12px' }}>
+              🥗 Salvar Metas Nutricionais no Perfil
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: CARDIO DETAIL */}
+      {activeTab === 'cardio' && (
+        <CardioCard cardioPlan={recommendations.cardioPlan} userProfile={recommendations.userProfile} />
+      )}
+
+      {/* TAB 5: MOBILITY & VIDEO ASSESSMENT */}
+      {activeTab === 'mobility' && (
+        <div>
+          <Section title="Avaliação Biomecânica por Vídeo" footer="Análise com visão computacional de agachamento profundo e dorsiflexão.">
+            <Row
+              icon="camera"
+              iconTint="var(--acc)"
+              title={mobilityAssessment ? `Score Atual: ${mobilityAssessment.score}/100` : "Gravar Teste de Mobilidade (6s)"}
+              subtitle={mobilityAssessment ? mobilityAssessment.level : "Toque para abrir a câmera com guia visual de gestos"}
+              accessory="chevron"
+              onClick={() => setMobilityModalOpen(true)}
+            />
+            {mobilityAssessment && (
+              <>
+                <Row
+                  icon="note"
+                  iconTint="var(--blue)"
+                  title="Diagnóstico Articular"
+                  subtitle={mobilityAssessment.biomechanicalNotes}
+                />
+                {mobilityAssessment.workoutAdjustments?.map((a, i) => (
+                  <Row
+                    key={i}
+                    icon="shield"
+                    iconTint="var(--orange)"
+                    title={`Ajuste no ${a.exercise}`}
+                    subtitle={a.adaptation}
+                  />
+                ))}
+              </>
             )}
-            <SafetyCard assessment={recommendations.safetyAssessment} />
-            {recommendations.computerVision && (
-              <PostureCard
-                analysis={recommendations.computerVision}
-                onRetakePhotos={onRetakePhotos}
-              />
-            )}
+          </Section>
+
+          <div style={{ marginTop: 12 }}>
+            <Button variant="primary" onClick={() => setMobilityModalOpen(true)} style={{ width: '100%', padding: '12px' }}>
+              📹 {mobilityAssessment ? 'Refazer Teste com Câmera' : 'Abrir Gravador de Teste (6s)'}
+            </Button>
           </div>
-        )}
-
-        {activeTab === 'workout' && (
-          <div className="single-card">
-            <WorkoutCard plan={recommendations.workoutPlan} />
-            <div style={{ marginTop: 16, textAlign: 'center' }}>
-              <button className="btn-primary" onClick={handleImportToOpenGym}>
-                📥 Importar estes Treinos para o openGym
-              </button>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'nutrition' && (
-          <div className="single-card">
-            <NutritionCard plan={recommendations.nutritionPlan} />
-            <div style={{ marginTop: 16, textAlign: 'center' }}>
-              <button className="btn-primary" onClick={handleImportToOpenGym}>
-                🥗 Salvar Metas Nutricionais no Perfil
-              </button>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'cardio' && (
-          <div className="single-card">
-            <CardioCard cardioPlan={recommendations.cardioPlan} userProfile={recommendations.userProfile} />
-          </div>
-        )}
-
-        {activeTab === 'mobility' && (
-          <div className="single-card">
-            <div className="coach-card">
-              <div className="card-header">
-                <h3>📹 Testes de Mobilidade Funcional Guiados por Vídeo</h3>
-                <button className="btn-primary small" onClick={() => setMobilityModalOpen(true)}>
-                  Abrir Gravador de Testes
-                </button>
-              </div>
-              <p className="card-desc">
-                Grave um teste de 6 segundos de perfil com a câmera do celular. Nossa IA detecta limitações articulares e ajusta automaticamente seus exercícios no openGym.
-              </p>
-
-              {mobilityAssessment ? (
-                <div className="mobility-assessment-details">
-                  <div className="score-summary-box">
-                    <div className="summary-val">{mobilityAssessment.score}<span>/100</span></div>
-                    <div className="summary-desc">
-                      <h4>{mobilityAssessment.level}</h4>
-                      <p>{mobilityAssessment.testName}</p>
-                    </div>
-                  </div>
-
-                  <h4 style={{ margin: '16px 0 8px' }}>Ângulos Medidos por IA:</h4>
-                  <div className="metrics-grid">
-                    {Object.entries(mobilityAssessment.calculatedAngles || {}).map(([k, val]) => (
-                      <div key={k} className="metric-cell">
-                        <span className="metric-label">{k}</span>
-                        <span className="metric-val">{val}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="diagnostic-box" style={{ marginTop: 14 }}>
-                    <strong>Laudo Biomecânico:</strong>
-                    <p>{mobilityAssessment.biomechanicalNotes}</p>
-                  </div>
-
-                  {mobilityAssessment.workoutAdjustments?.length > 0 && (
-                    <div className="adaptations-box" style={{ marginTop: 14 }}>
-                      <strong>Adaptações Recomendadas nos Treinos:</strong>
-                      {mobilityAssessment.workoutAdjustments.map((a, i) => (
-                        <div key={i} className="adj-item">
-                          <strong>{a.exercise}:</strong> {a.adaptation}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div style={{ marginTop: 18 }}>
-                    <button className="btn-primary" onClick={handleImportToOpenGym}>
-                      ✓ Aplicar Adaptações aos Treinos openGym
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="empty-mobility-state">
-                  <p>Nenhuma gravação de mobilidade realizada ainda.</p>
-                  <button className="btn-primary" onClick={() => setMobilityModalOpen(true)}>
-                    Gravar Primeiro Teste de Mobilidade
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'safety' && (
-          <div className="single-card">
-            <SafetyCard assessment={recommendations.safetyAssessment} />
-          </div>
-        )}
-
-        {activeTab === 'posture' && (
-          <div className="single-card">
-            {recommendations.computerVision ? (
-              <PostureCard
-                analysis={recommendations.computerVision}
-                onRetakePhotos={onRetakePhotos}
-              />
-            ) : (
-              <div className="posture-pending">
-                <div className="pending-icon">📸</div>
-                <h3>Análise Postural Pendente</h3>
-                <p>Adicione fotos no intake para calcular assimetrias e percentual de gordura</p>
-                {onRetakePhotos && (
-                  <button className="btn-primary" onClick={onRetakePhotos}>
-                    Tirar Fotos Agora
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="dashboard-actions">
-        <button className="btn-secondary" onClick={() => api?.reset?.()}>
-          🔄 Refazer Avaliação Completa
-        </button>
-        <button className="btn-primary" onClick={handleImportToOpenGym}>
-          📥 Salvar e Importar para openGym
-        </button>
-      </div>
+        </div>
+      )}
 
       {/* Mobility Test Modal */}
       <MobilityTestModal
         isOpen={mobilityModalOpen}
         onClose={() => setMobilityModalOpen(false)}
         onAssessmentComplete={(res) => {
-          useUI.getState().toast(`Avaliação concluída! Score: ${res.score}/100`);
+          useUI.getState().toast(`Mobilidade avaliada! Score: ${res.score}/100`);
         }}
       />
     </div>
   );
-}
-
-function getRiskIcon(level) {
-  const icons = { low: '✅', moderate: '⚠️', high: '🚨' };
-  return icons[level] || '❓';
-}
-
-function getRiskLabel(level) {
-  const labels = { low: 'Baixo', moderate: 'Moderado', high: 'Alto' };
-  return labels[level] || 'Desconhecido';
-}
-
-function getStrategyLabel(strategy) {
-  const labels = { SURPLUS: 'Superávit Calórico', DEFICIT: 'Déficit Calórico', RECOMP: 'Recomposição Corporal' };
-  return labels[strategy] || strategy;
 }
 
 export default CoachDashboard;

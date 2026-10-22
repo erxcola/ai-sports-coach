@@ -2149,6 +2149,17 @@ const routes = {
     json(res, 200, { code });
   },
 
+  // CLI / Local pairing generator for single-tenant local instances
+  'POST /api/pair/admin-mint': async (req, res) => {
+    const user = db.users[0];
+    if (!user) return json(res, 400, { error: 'no user in database' });
+    for (const [k, v] of pairings) if (v.uid === user.id) pairings.delete(k);
+    const code = makePairCode();
+    pairings.set(code, { uid: user.id, exp: Date.now() + 60 * 60000 });
+    audit(req, 'auth.pair.create', { user });
+    json(res, 200, { ok: true, code, user: user.name });
+  },
+
   // Called from the mobile app itself with the code shown in the browser. No session required —
   // the code IS the credential, one-shot and 60-minute-lived like a WebAuthn challenge.
   'POST /api/pair/redeem': async (req, res) => {

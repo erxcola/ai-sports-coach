@@ -1,5 +1,5 @@
 // src/frontend/src/components/coach/AICoachApp.jsx
-// Componente principal que integra tudo - ponto de entrada do AI Coach
+// Integracao unificada do AI Coach no openGym sem wrappers duplicados.
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAICoach } from '../../hooks/useAICoach';
@@ -43,12 +43,11 @@ export function AICoachApp() {
   const handleIntakeSubmit = useCallback(async (data) => {
     try {
       const recs = await processIntake(data);
-      // Salvar no localStorage para próximas sessões
       localStorage.setItem('aiCoachProfile', JSON.stringify(data));
       setIntakeCompleted(true);
       setShowIntake(false);
 
-      // Importar automaticamente para o core store do openGym (rotinas, metas e cardio)
+      // Auto-import direto para o store do openGym
       try {
         await importAICoachToOpenGym({
           workoutPlan: recs?.workoutPlan,
@@ -56,7 +55,7 @@ export function AICoachApp() {
           cardioPlan: recs?.cardioPlan,
           mobilityAssessment: null
         });
-        useUI.getState().toast('Treinos e plano alimentar importados automaticamente para o openGym!');
+        useUI.getState().toast('Treinos e plano alimentar sincronizados no openGym!');
       } catch (importErr) {
         console.warn('Auto import non-fatal:', importErr);
       }
@@ -76,27 +75,25 @@ export function AICoachApp() {
     setShowIntake(true);
   }, [reset]);
 
-  // Mostrar loading durante processamento
+  // Loading state com estilo nativo openGym
   if (isLoading) {
     return (
-      <div className="ai-coach-app loading">
+      <div className="empty" style={{ paddingTop: '35vh' }}>
         <div className="loading-spinner">
           <div className="spinner"></div>
-          <p>Gerando seu plano personalizado...</p>
-          <p className="loading-detail">Analisando biomecânica, calculando nutrição e montando treino</p>
+          <p style={{ marginTop: 14, fontWeight: 600 }}>Gerando prescrição personalizada...</p>
+          <p style={{ fontSize: 13, color: 'var(--label-2)' }}>Calculando biomecânica, nutrição clínica e rotinas</p>
         </div>
       </div>
     );
   }
 
-  // Mostrar erro se houver
+  // Error state
   if (error) {
     return (
-      <div className="ai-coach-app error">
-        <div className="error-state">
-          <div className="error-icon">⚠️</div>
-          <h2>Erro ao processar</h2>
-          <p>{error}</p>
+      <div className="empty" style={{ paddingTop: '30vh' }}>
+        <p style={{ color: 'var(--red)', fontWeight: 600 }}>{error}</p>
+        <div style={{ marginTop: 14 }}>
           <button className="btn-primary" onClick={() => setShowIntake(true)}>
             Tentar Novamente
           </button>
@@ -106,56 +103,21 @@ export function AICoachApp() {
   }
 
   return (
-    <div className="ai-coach-app">
-      {/* Header Global */}
-      <header className="app-header">
-        <div className="header-content">
-          <div className="logo-section">
-            <span className="logo-icon">🤖</span>
-            <div>
-              <h1>AI Sports Coach</h1>
-              <p className="tagline">Biomecânica • Nutrição Clínica • Periodização</p>
-            </div>
-          </div>
-          {intakeCompleted && (
-            <div className="header-actions">
-              <button className="btn-secondary" onClick={handleReset}>
-                🔄 Refazer Onboarding
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="app-main">
-        {/* Medical Intake Modal */}
+    <div className="ai-coach-native-page">
+      {/* Onboarding Form Sheet / Page */}
+      {(showIntake || !intakeCompleted) ? (
         <MedicalIntakeModal
-          isOpen={showIntake || !intakeCompleted}
+          isOpen={true}
           onSubmit={handleIntakeSubmit}
           onClose={intakeCompleted ? () => setShowIntake(false) : undefined}
         />
-
-        {/* Coach Dashboard */}
-        {intakeCompleted && recommendations && (
-          <CoachDashboard
-            recommendations={recommendations}
-            api={{ reset }}
-            onRetakePhotos={handleRetakePhotos}
-          />
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="app-footer">
-        <p>
-          Baseado em evidências científicas: Schoenfeld, Helms, ISSN, MediaPipe
-        </p>
-        <p className="disclaimer">
-          ⚠️ Este sistema fornece recomendações baseadas em algoritmos.
-          Consulte sempre um profissional de saúde qualificado antes de iniciar qualquer programa de exercícios ou dieta.
-        </p>
-      </footer>
+      ) : recommendations ? (
+        <CoachDashboard
+          recommendations={recommendations}
+          api={{ reset: handleReset }}
+          onRetakePhotos={handleRetakePhotos}
+        />
+      ) : null}
     </div>
   );
 }
