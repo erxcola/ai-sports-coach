@@ -287,6 +287,35 @@ function Schedule({ S, update, nav, mode }) {
       />
     </Section>
 
+    {/* Se houver dieta ativa salva, exibe o painel direto com atalho para receitas */}
+    {S.dietPlan && (
+      <Section
+        title="Plano Alimentar & Dieta Ativa"
+        footer={`${S.dietPlan.strategy || 'Recomposição Corporal'} · Toque em qualquer refeição para trocar alimentos ou ver receitas fit.`}
+        style={{ marginBottom: 12 }}
+      >
+        <Row
+          icon="scale"
+          iconTint="var(--blue)"
+          title={`Meta: ${S.dietPlan.caloricTarget} kcal / dia`}
+          subtitle={`${S.dietPlan.macros?.proteinGrams || S.dietPlan.proteinGrams || 160}g Proteína · ${S.dietPlan.macros?.carbGrams || S.dietPlan.carbGrams || 220}g Carbs · ${S.dietPlan.macros?.fatGrams || S.dietPlan.fatGrams || 65}g Gord`}
+          accessory="chevron"
+          onClick={() => nav('/aicoach?tab=nutrition')}
+        />
+        {(S.dietPlan.meals || []).map((m, idx) => (
+          <Row
+            key={idx}
+            icon="clock"
+            iconTint="var(--acc)"
+            title={`${m.time || 'Refeição'} · ${m.name || `Refeição ${idx + 1}`}`}
+            subtitle={`${m.calories} kcal · ${m.currentRecipe ? `🍲 ${m.currentRecipe.name}` : (m.defaultFood ? m.defaultFood.slice(0, 48) + '...' : 'Equilibrada')}`}
+            accessory="chevron"
+            onClick={() => nav('/aicoach?tab=nutrition')}
+          />
+        ))}
+      </Section>
+    )}
+
     <Section className="plan-mode" footer={mode === 'rotation'
       ? t('Routines in a loop. Whatever is next stays next until you train it, whatever the day.')
       : t('The same routines on the same weekdays, every week.')}>

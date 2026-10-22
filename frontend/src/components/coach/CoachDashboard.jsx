@@ -14,8 +14,10 @@ import { importAICoachToOpenGym } from '../../lib/ai/plan-importer.js';
 import { useUI } from '../../store/useUI.js';
 import { useStore } from '../../store/useStore.js';
 
-export function CoachDashboard({ recommendations, onRetakePhotos, api }) {
-  const [activeTab, setActiveTab] = useState('overview');
+export function CoachDashboard({ recommendations, onRetakePhotos, api, defaultTab }) {
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const initialTab = defaultTab || urlParams?.get('tab') || 'overview';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [mobilityModalOpen, setMobilityModalOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [imported, setImported] = useState(false);

@@ -7,6 +7,7 @@ import path from 'node:path';
 import https from 'node:https';
 import dns from 'node:dns';
 import net from 'node:net';
+import { fileURLToPath } from 'node:url';
 import { pipeline } from 'node:stream/promises';
 import {
   generateRegistrationOptions, verifyRegistrationResponse,
@@ -2682,6 +2683,25 @@ const server = http.createServer(async (req, res) => {
   try { url = new URL(req.url, 'http://x'); }
   catch { return json(res, 400, { error: 'bad request' }); }
   let key = req.method + ' ' + url.pathname;
+
+  // Serve catalogue exercise media (stills and animation clips)
+  if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname.startsWith('/exercise-media/')) {
+    const rel = decodeURIComponent(url.pathname.replace(/^\/exercise-media\//, ''));
+    const baseDir = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../catalogue/media');
+    const target = path.join(baseDir, rel);
+    if (target.startsWith(baseDir) && fs.existsSync(target)) {
+      const ext = path.extname(target).toLowerCase();
+      const ct = ext === '.mp4' ? 'video/mp4' : ext === '.webp' ? 'image/webp' : 'application/octet-stream';
+      res.writeHead(200, {
+        'Content-Type': ct,
+        'Cache-Control': 'public, max-age=31536000',
+        'Access-Control-Allow-Origin': '*'
+      });
+      if (req.method === 'HEAD') return res.end();
+      return fs.createReadStream(target).pipe(res);
+    }
+  }
+
   // The one route with a parameter in its path. Mapped onto its template key here so the table
   // above stays a plain lookup, and so csrfOk and the catch-all see one name for every file.
   const mm = /^\/api\/media\/([0-9a-f]{64})$/.exec(url.pathname);
