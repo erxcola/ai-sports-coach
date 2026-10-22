@@ -164,7 +164,7 @@ export default function Plan() {
     <div className="hdr">
       <div><h1>{t('Plan')}</h1><div className="sub">{mode === 'rotation' ? t('Your routines in a loop') : t('Your weekly routine')}</div></div>
       <div className="hdr-actions">
-        {showCoach && <Button size="sm" variant="tinted" icon="sparkles" onClick={() => nav('/coach')}>{t('Coach')}</Button>}
+        <Button size="sm" variant="tinted" icon="sparkles" onClick={() => nav('/aicoach')}>AI Coach</Button>
         <button className="iconbtn" onClick={openMenu} aria-label={t('Plan options')} title={t('Plan options')}><Icon name="share" /></button>
       </div>
     </div>
@@ -276,6 +276,17 @@ function Schedule({ S, update, nav, mode }) {
   const editing = editLoop && !external
 
   return <>
+    <Section className="plan-link" style={{ marginBottom: 12 }}>
+      <Row
+        icon="sparkles"
+        iconTint="var(--acc)"
+        title="AI Sports Coach & Prescrição"
+        subtitle={S.dietPlan ? `Dieta ativa (${S.dietPlan.caloricTarget} kcal) · Mobilidade e cardio sincronizados` : 'Gerar treinos biomecânicos e avaliar mobilidade com vídeo'}
+        accessory="chevron"
+        onClick={() => nav('/aicoach')}
+      />
+    </Section>
+
     <Section className="plan-mode" footer={mode === 'rotation'
       ? t('Routines in a loop. Whatever is next stays next until you train it, whatever the day.')
       : t('The same routines on the same weekdays, every week.')}>

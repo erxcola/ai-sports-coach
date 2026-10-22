@@ -155,7 +155,7 @@ function Shell() {
     return () => document.body.classList.remove('no-tabbar')
   }, [inWorkout])
 
-  const noTabs = inWorkout || loc.pathname === '/coach' || loc.pathname === '/aicoach' || needsMobileOnboarding
+  const noTabs = inWorkout || loc.pathname === '/coach' || needsMobileOnboarding
 
   const authed = user || isGuest
   if (!ready && !authed) return (

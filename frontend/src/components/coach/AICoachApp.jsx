@@ -5,6 +5,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAICoach } from '../../hooks/useAICoach';
 import { MedicalIntakeModal } from '../onboarding/MedicalIntakeModal';
 import { CoachDashboard } from './CoachDashboard';
+import { importAICoachToOpenGym } from '../../lib/ai/plan-importer.js';
+import { useUI } from '../../store/useUI.js';
 import './coach-styles.css';
 
 export function AICoachApp() {
@@ -40,11 +42,24 @@ export function AICoachApp() {
 
   const handleIntakeSubmit = useCallback(async (data) => {
     try {
-      await processIntake(data);
+      const recs = await processIntake(data);
       // Salvar no localStorage para próximas sessões
       localStorage.setItem('aiCoachProfile', JSON.stringify(data));
       setIntakeCompleted(true);
       setShowIntake(false);
+
+      // Importar automaticamente para o core store do openGym (rotinas, metas e cardio)
+      try {
+        await importAICoachToOpenGym({
+          workoutPlan: recs?.workoutPlan,
+          nutritionPlan: recs?.nutritionPlan,
+          cardioPlan: recs?.cardioPlan,
+          mobilityAssessment: null
+        });
+        useUI.getState().toast('Treinos e plano alimentar importados automaticamente para o openGym!');
+      } catch (importErr) {
+        console.warn('Auto import non-fatal:', importErr);
+      }
     } catch (err) {
       console.error('Erro no onboarding:', err);
     }
