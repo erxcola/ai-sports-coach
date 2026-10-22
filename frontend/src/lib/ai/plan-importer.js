@@ -301,20 +301,41 @@ export async function importAICoachToOpenGym({
 
   // 3. Prepare Diet Plan (checks if user customized meals/schedule in the store)
   const currentSavedDiet = store.S?.dietPlan || {};
+  const requestedMealsCount = nutritionPlan.perMealDistribution?.mealsPerDay || currentSavedDiet.mealsPerDay || 4;
+  const schedules = nutritionPlan.perMealDistribution?.mealSchedules || [];
+  
+  // Default meal templates tailored to meal count
+  const defaultMealNames = requestedMealsCount === 3
+    ? ['Café da Manhã', 'Almoço', 'Jantar']
+    : requestedMealsCount === 5
+    ? ['Café da Manhã', 'Lanche da Manhã', 'Almoço', 'Lanche da Tarde (Pré-Treino)', 'Jantar']
+    : requestedMealsCount === 6
+    ? ['Café da Manhã', 'Lanche da Manhã', 'Almoço', 'Lanche da Tarde', 'Jantar', 'Ceia']
+    : ['Café da Manhã', 'Almoço', 'Lanche da Tarde (Pré-Treino)', 'Jantar'];
+
+  const targetCals = currentSavedDiet.caloricTarget || nutritionPlan.caloricTarget || 2200;
+  const targetProt = nutritionPlan.macros?.proteinGrams || nutritionPlan.macronutrients?.protein || 160;
+  const targetCarbs = nutritionPlan.macros?.carbGrams || nutritionPlan.macronutrients?.carbohydrates || 220;
+  const targetFats = nutritionPlan.macros?.fatGrams || nutritionPlan.macronutrients?.fats || 65;
+
+  const generatedMeals = defaultMealNames.map((name, i) => ({
+    name,
+    time: schedules[i] || (i === 0 ? '08:00' : i === 1 ? '12:30' : i === 2 ? '16:30' : '20:00'),
+    calories: Math.round(targetCals / requestedMealsCount),
+    protein: Math.round(targetProt / requestedMealsCount),
+    carbs: Math.round(targetCarbs / requestedMealsCount),
+    fat: Math.round(targetFats / requestedMealsCount)
+  }));
+
   const dietPayload = nutritionPlan ? {
-    caloricTarget: currentSavedDiet.caloricTarget || nutritionPlan.caloricTarget || 2200,
+    caloricTarget: targetCals,
     strategy: nutritionPlan.strategy || 'Recomposição Corporal',
-    proteinGrams: nutritionPlan.macros?.proteinGrams || nutritionPlan.macronutrients?.protein || 160,
-    carbGrams: nutritionPlan.macros?.carbGrams || nutritionPlan.macronutrients?.carbohydrates || 220,
-    fatGrams: nutritionPlan.macros?.fatGrams || nutritionPlan.macronutrients?.fats || 65,
+    proteinGrams: targetProt,
+    carbGrams: targetCarbs,
+    fatGrams: targetFats,
     hydrationLiters: nutritionPlan.hydrationLiters || 3.2,
-    mealsPerDay: currentSavedDiet.mealsPerDay || 4,
-    meals: currentSavedDiet.meals || nutritionPlan.meals || [
-      { name: 'Café da Manhã', calories: 500, protein: 35, carbs: 55, fat: 15 },
-      { name: 'Almoço', calories: 750, protein: 50, carbs: 80, fat: 20 },
-      { name: 'Lanche da Tarde (Pré-Treino)', calories: 400, protein: 30, carbs: 50, fat: 10 },
-      { name: 'Jantar', calories: 550, protein: 45, carbs: 35, fat: 20 }
-    ],
+    mealsPerDay: requestedMealsCount,
+    meals: currentSavedDiet.meals?.length === requestedMealsCount ? currentSavedDiet.meals : (nutritionPlan.meals || generatedMeals),
     updatedAt: Date.now()
   } : null;
 

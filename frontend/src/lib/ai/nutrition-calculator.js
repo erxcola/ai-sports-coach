@@ -21,7 +21,9 @@ export class NutritionCalculator {
       bodyFatPercentage = 20,
       age = 30,
       sex = 'male',
-      height = 175
+      height = 175,
+      mealsPerDay: userMealsPerDay,
+      firstMealTime = '08:00'
     } = params;
 
     // 1. Calcular LBM (Lean Body Mass)
@@ -69,10 +71,20 @@ export class NutritionCalculator {
     const carbCals = targetCalories - proteinCals - fatCals;
     const carbGrams = Math.max(0, Math.round(carbCals / 4));
 
-    // 7. Distribuição por refeição (3-5 refeições)
-    const mealsPerDay = goal === 'hypertrophy' ? 5 : goal === 'fat_loss' ? 4 : 4;
+    // 7. Distribuição por refeição (3-6 refeições conforme preferência do usuário)
+    const mealsPerDay = userMealsPerDay || (goal === 'hypertrophy' ? 5 : goal === 'fat_loss' ? 4 : 4);
     const proteinPerMeal = Math.round(proteinGrams / mealsPerDay);
     const leucineTrigger = Math.round(0.4 * leanBodyMass / 1000 * 1000); // ~0.4g/kg per meal
+
+    // Cálculo modular de horários das refeições a partir de firstMealTime
+    const [startH, startM] = (firstMealTime || '08:00').split(':').map(Number);
+    const intervalHours = (14 / Math.max(1, mealsPerDay - 1)); // Espaço de ~14h de vigília
+    const mealSchedules = Array.from({ length: mealsPerDay }, (_, i) => {
+      const totalMinutes = (startH * 60 + (startM || 0)) + Math.round(i * intervalHours * 60);
+      const h = Math.floor((totalMinutes % 1440) / 60);
+      const m = Math.floor((totalMinutes % 60) / 5) * 5; // Arredonda para múltiplos de 5 min
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    });
 
     // 8. Micronutrientes e suporte articular
     const jointSupport = this.getJointSupportProtocol(goal, dietaryRestrictions);
@@ -89,6 +101,7 @@ export class NutritionCalculator {
       },
       perMealDistribution: {
         mealsPerDay,
+        mealSchedules,
         proteinPerMeal,
         leucineTargetPerMeal: leucineTrigger,
         carbDistribution: this.distributeCarbs(carbGrams, mealsPerDay, goal),

@@ -99,27 +99,18 @@ export default function EnhancedCoachIntake() {
 
   return (
     <div className="narrow ob">
-      <div className="ob-top">
-        <button className="iconbtn" onClick={() => nav(editing ? '/aicoach' : '/plan')} aria-label={t('Back')}>
-          <Icon name="chevronLeft" />
-        </button>
-        {key !== 'consent' && (
-          <div className="ob-dots">
-            {/* Progress indicator */}
-            <div className="progress-steps">
-              {['basic', 'goals', 'medical', 'mobility', 'lifestyle'].map((s, i) => (
-                <span key={s} className={'ob-dot' + (i <= step ? ' on' : '')} />
-              ))}
-            </div>
+      {key === 'consent' ? (
+        <>
+          <div className="ob-top">
+            <button className="iconbtn" onClick={() => nav(editing ? '/aicoach' : '/plan')} aria-label={t('Back')}>
+              <Icon name="chevronLeft" />
+            </button>
           </div>
-        )}
-      </div>
-
-      <div className="ob-body">
-        {key === 'consent' && (
-          <Consent onAgree={agree} onDecline={() => nav('/plan')} />
-        )}
-
+          <div className="ob-body">
+            <Consent onAgree={agree} onDecline={() => nav('/plan')} />
+          </div>
+        </>
+      ) : (
         <MedicalIntakeModal
           isOpen={true}
           onSubmit={handleIntakeSubmit}
@@ -127,24 +118,10 @@ export default function EnhancedCoachIntake() {
             if (!editing && !hasRecommendations) {
               nav('/plan', { replace: true });
             } else {
-              setShowIntake(false);
+              nav('/aicoach', { replace: true });
             }
           }}
         />
-      </div>
-
-      {key !== 'consent' && (
-        <div className="ob-foot">
-          <Button
-            variant="primary"
-            style={{ flex: 1 }}
-            disabled={isLoading}
-            icon={last ? 'sparkles' : undefined}
-            onClick={() => {}}
-          >
-            {isLoading ? t('Processando...') : (last ? (editing ? t('Salvar') : t('Gerar meu plano')) : t('Continuar'))}
-          </Button>
-        </div>
       )}
     </div>
   );

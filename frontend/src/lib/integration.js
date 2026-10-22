@@ -193,7 +193,9 @@ export class IntegrationLayer {
       bodyFatPercentage: profile.bodyFatPercentage,
       age: profile.age,
       sex: profile.sex,
-      height: profile.height
+      height: profile.height,
+      mealsPerDay: profile.mealsPerDay,
+      firstMealTime: profile.firstMealTime
     });
 
     return new NutritionPlan(planData);
@@ -329,6 +331,11 @@ export function setupCoachIntegration(onRecommendationsChange) {
         },
         profileImage: intakeData.profileImage
       });
+
+      profile.mealsPerDay = intakeData.mealsPerDay;
+      profile.firstMealTime = intakeData.firstMealTime;
+      profile.weeklyFrequency = intakeData.weeklyFrequency;
+      profile.preferredDays = intakeData.preferredDays;
 
       const recommendations = await integration.generateRecommendations({
         profile,
