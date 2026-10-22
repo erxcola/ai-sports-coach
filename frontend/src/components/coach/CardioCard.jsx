@@ -6,11 +6,13 @@ import { Section, Row, Segmented, Button } from '../ui.jsx';
 import Icon from '../Icon.jsx';
 import { HeartRateWidget } from './HeartRateWidget.jsx';
 import { CARDIO_MODALITIES } from '../../lib/ai/cardio-engine.js';
+import { BeginnerGlossaryModal } from './BeginnerGlossaryModal.jsx';
 
 export function CardioCard({ cardioPlan, userProfile = {} }) {
   const [selectedModality, setSelectedModality] = useState(
     cardioPlan?.primaryModality?.id || 'incline_treadmill'
   );
+  const [glossaryOpen, setGlossaryOpen] = useState(false);
 
   if (!cardioPlan) {
     return (
@@ -48,7 +50,24 @@ export function CardioCard({ cardioPlan, userProfile = {} }) {
             </span>
           </div>
 
-          <HeartRateWidget userProfile={userProfile} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <HeartRateWidget userProfile={userProfile} />
+            <button
+              onClick={() => setGlossaryOpen(true)}
+              style={{
+                background: 'var(--surface-2)',
+                border: 'var(--hair) solid var(--sep-op)',
+                color: 'var(--pink)',
+                padding: '6px 10px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              ❓ Zona 2?
+            </button>
+          </div>
         </div>
 
         {/* 4 Metrics Strip */}
@@ -173,6 +192,12 @@ export function CardioCard({ cardioPlan, userProfile = {} }) {
           ))}
         </Section>
       )}
+
+      {/* Beginner Glossary Modal */}
+      <BeginnerGlossaryModal
+        isOpen={glossaryOpen}
+        onClose={() => setGlossaryOpen(false)}
+      />
     </div>
   );
 }

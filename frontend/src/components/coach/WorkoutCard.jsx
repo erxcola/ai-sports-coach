@@ -1,29 +1,63 @@
 // src/frontend/src/components/coach/WorkoutCard.jsx
-// Visualizacao de treino nativa openGym: estruturada por divisao, series, repeticoes, RIR e substituicoes articulares.
+// Visualizacao de treino nativa openGym: estruturada por divisao, series, repeticoes, RIR,
+// videos de execucao funcionando e explicacao didatica de termos para leigos.
 
 import React, { useState } from 'react';
 import { Section, Row, Segmented, Button } from '../ui.jsx';
 import Icon from '../Icon.jsx';
+import { findCatalogueExercise } from '../../lib/ai/exercise-matcher.js';
+import { ExercisePreviewModal } from './ExercisePreviewModal.jsx';
+import { BeginnerGlossaryModal } from './BeginnerGlossaryModal.jsx';
 
 export function WorkoutCard({ plan }) {
   if (!plan) return null;
 
   const routines = plan.routines || plan.days || [];
   const [selectedRoutineIndex, setSelectedRoutineIndex] = useState(0);
+  const [previewExercise, setPreviewExercise] = useState(null);
+  const [glossaryOpen, setGlossaryOpen] = useState(false);
 
   const activeRoutine = routines[selectedRoutineIndex] || routines[0];
 
+  // Open video preview for an exercise
+  const handleOpenPreview = (exercise) => {
+    const matched = findCatalogueExercise(exercise.name);
+    setPreviewExercise({
+      ...exercise,
+      ptName: exercise.name,
+      id: matched?.id || '0025',
+      gif: matched?.gif || '0025.mp4',
+      bp: matched?.bp || exercise.muscleGroup,
+      eq: matched?.eq || 'Halter / Barra'
+    });
+  };
+
   return (
     <div className="coach-workout-native">
-      {/* 1. Header Overview & Volume */}
+      {/* 1. Header Overview & Beginner Terms Button */}
       <div className="coach-native-box" style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--orange)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Divisão {plan.splitType || 'ABC'}
           </span>
-          <span style={{ fontSize: 12, color: 'var(--label-2)' }}>
-            {plan.weeklyFrequency || 3}x por semana
-          </span>
+          <button
+            onClick={() => setGlossaryOpen(true)}
+            style={{
+              background: 'var(--surface-2)',
+              border: 'var(--hair) solid var(--sep-op)',
+              color: 'var(--orange)',
+              padding: '4px 10px',
+              borderRadius: 20,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4
+            }}
+          >
+            ❓ O que é RIR e Reps?
+          </button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12 }}>
@@ -31,7 +65,7 @@ export function WorkoutCard({ plan }) {
             Sobrecarga Dupla
           </span>
           <span style={{ fontSize: 13, color: 'var(--label-2)' }}>
-            ({plan.progressiveOverload?.weeklyIncrease || '+2.5% ou +1 rep'})
+            ({plan.progressiveOverload?.weeklyIncrease || '+2.5% ou +1 repetição'})
           </span>
         </div>
 
@@ -68,7 +102,7 @@ export function WorkoutCard({ plan }) {
       {activeRoutine && (
         <Section
           title={`${activeRoutine.day || activeRoutine.name || 'Treino'} · ${activeRoutine.focus || 'Foco Hipertrofia'}`}
-          footer={`Volume total desta sessão: ${activeRoutine.weeklyVolume || activeRoutine.exercises?.length * 3 || 15} séries efetivas.`}
+          footer={`Toque em "Ver Execução" para assistir ao vídeo do movimento e conferir a postura correta.`}
           style={{ marginBottom: 14 }}
         >
           {activeRoutine.exercises?.map((exercise, exIndex) => {
@@ -78,18 +112,18 @@ export function WorkoutCard({ plan }) {
               <div
                 key={exIndex}
                 style={{
-                  padding: '12px 14px',
+                  padding: '14px',
                   borderBottom: exIndex < activeRoutine.exercises.length - 1 ? 'var(--hair) solid var(--sep-op)' : 'none'
                 }}
               >
-                {/* Exercise Title & Badges */}
+                {/* Exercise Title, Muscle & Safety Indicator */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                   <div>
                     <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--label)', display: 'block' }}>
                       {exercise.name}
                     </span>
                     <span style={{ fontSize: 11, color: 'var(--label-3)' }}>
-                      {exercise.muscleGroup || 'Grupamento Principal'}
+                      {exercise.muscleGroup || 'Músculo Principal'}
                     </span>
                   </div>
 
@@ -103,21 +137,43 @@ export function WorkoutCard({ plan }) {
                       color: isSafe ? 'var(--acc)' : 'var(--orange)'
                     }}
                   >
-                    {isSafe ? '✅ Articular Seguro' : '🛡️ Ajustado'}
+                    {isSafe ? '✅ Articulação Segura' : '🛡️ Ajustado'}
                   </span>
                 </div>
 
                 {/* Badges: Sets x Reps, RIR, Rest */}
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
                   <span className="ex-badge">
-                    {exercise.sets} séries × {exercise.repRange} reps
+                    📦 {exercise.sets} séries × {exercise.repRange} reps
                   </span>
                   <span className="ex-badge">
-                    RIR {exercise.targetRIR ?? 2} (reserva)
+                    🎯 RIR {exercise.targetRIR ?? 2} (reserva)
                   </span>
                   <span className="ex-badge">
                     ⏱️ {exercise.restSeconds || 90}s descanso
                   </span>
+                </div>
+
+                {/* Video Preview Button */}
+                <div style={{ marginBottom: 6 }}>
+                  <button
+                    onClick={() => handleOpenPreview(exercise)}
+                    style={{
+                      background: 'var(--surface-2)',
+                      border: 'var(--hair) solid var(--sep-op)',
+                      borderRadius: 8,
+                      padding: '6px 12px',
+                      color: 'var(--blue)',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    ▶️ Ver Vídeo de Execução & Postura
+                  </button>
                 </div>
 
                 {/* Orthopedic adjustment / substitution cue */}
@@ -143,16 +199,29 @@ export function WorkoutCard({ plan }) {
         <Row
           icon="dumbbell"
           iconTint="var(--acc)"
-          title="Progressão Dupla"
-          subtitle="Atingiu o topo de repetições com RIR ≤ alvo? Aumente 2.5kg membros inferiores ou 1.25kg superiores."
+          title="Como Progredir nos Treinos?"
+          subtitle="Atingiu o topo de repetições com RIR ≤ alvo? Aumente 2.5kg membros inferiores ou 1.25kg superiores na semana seguinte."
         />
         <Row
           icon="repeat"
           iconTint="var(--blue)"
-          title="Semana de Deload"
-          subtitle={`A cada ${plan.progressiveOverload?.deloadFrequency || 5} semanas. Redução de 40% no volume para regeneração do SNC e cartilagens.`}
+          title="Semana de Deload (Descanso Ativo)"
+          subtitle={`A cada ${plan.progressiveOverload?.deloadFrequency || 5} semanas. Reduzimos o peso em 40% para recuperar seus tendões e cartilagens.`}
         />
       </Section>
+
+      {/* Video Preview Modal */}
+      <ExercisePreviewModal
+        exercise={previewExercise}
+        isOpen={!!previewExercise}
+        onClose={() => setPreviewExercise(null)}
+      />
+
+      {/* Beginner Glossary Modal */}
+      <BeginnerGlossaryModal
+        isOpen={glossaryOpen}
+        onClose={() => setGlossaryOpen(false)}
+      />
     </div>
   );
 }

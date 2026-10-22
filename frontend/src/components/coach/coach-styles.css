@@ -111,6 +111,14 @@
   white-space: nowrap;
 }
 
+.glossary-card {
+  background: var(--surface);
+  border: var(--hair) solid var(--sep-op);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+
 
 .ai-coach-app,
 .coach-dashboard {
