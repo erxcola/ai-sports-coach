@@ -1905,6 +1905,16 @@ function dataWritable() {
 }
 
 const routes = {
+  // Root endpoint: redirects browsers to the web app, answers JSON to API checks
+  'GET /': async (req, res) => {
+    if (req.headers.accept?.includes('text/html')) {
+      res.writeHead(302, { Location: ORIGIN });
+      res.end();
+      return;
+    }
+    json(res, 200, { ok: true, app: 'openGym / AI Sports Coach API', version: '1.4.1', web: ORIGIN });
+  },
+
   // 503 rather than a flag in a 200: the container healthcheck is `wget --spider`, which reads
   // the status and nothing else, and an instance that cannot write its data directory is exactly
   // what "unhealthy" is for. The 200 keeps the shape it had, plus the flag it is now asserting.
@@ -2131,23 +2141,30 @@ const routes = {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
     // One live code per profile: the newest is the one on screen. Keeping every code minted
-    // let one session grow this Map without limit for five minutes at a time.
+    // let one session grow this Map without limit for sixty minutes at a time.
     for (const [k, v] of pairings) if (v.uid === user.id) pairings.delete(k);
     const code = makePairCode();
-    pairings.set(code, { uid: user.id, exp: Date.now() + 5 * 60000 });
+    pairings.set(code, { uid: user.id, exp: Date.now() + 60 * 60000 });
     audit(req, 'auth.pair.create', { user });
     json(res, 200, { code });
   },
 
   // Called from the mobile app itself with the code shown in the browser. No session required —
-  // the code IS the credential, one-shot and 5-minute-lived like a WebAuthn challenge.
+  // the code IS the credential, one-shot and 60-minute-lived like a WebAuthn challenge.
   'POST /api/pair/redeem': async (req, res) => {
     const body = await readBody(req);
-    const code = text(body.code).trim().toUpperCase();
-    const p = pairings.get(code);
-    if (p) pairings.delete(code);
+    const rawCode = text(body.code);
+    const normalizedCode = rawCode.replace(/[^A-Z0-9]/gi, '').trim().toUpperCase();
+    const cleanCode = rawCode.trim().toUpperCase();
+    
+    // Look up either normalized or exact code
+    const p = pairings.get(normalizedCode) || pairings.get(cleanCode);
+    if (p) {
+      pairings.delete(normalizedCode);
+      pairings.delete(cleanCode);
+    }
     if (!p || p.exp < Date.now()) {
-      auditFail(req, 'auth.pair.fail', { ok: false, msg: 'code-invalid' });
+      auditFail(req, 'auth.pair.fail', { ok: false, msg: 'code-invalid', code: normalizedCode });
       return json(res, 400, { error: 'invalid or expired code', code: 'pair-invalid' });
     }
     const user = db.users.find(u => u.id === p.uid);
