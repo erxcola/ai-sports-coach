@@ -68,6 +68,50 @@
   gap: 4px;
 }
 
+/* Native Card Boxes & Badges */
+.coach-native-box {
+  background: var(--surface);
+  border: var(--hair) solid var(--sep-op);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+}
+
+.c-sub-metric {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.c-sub-val {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.c-sub-lbl {
+  font-size: 10px;
+  color: var(--label-2);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.ex-badge {
+  font-size: 11px;
+  background: var(--surface-2);
+  color: var(--label-2);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+
 .ai-coach-app,
 .coach-dashboard {
   background: var(--bg);

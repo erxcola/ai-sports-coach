@@ -299,15 +299,17 @@ export async function importAICoachToOpenGym({
     });
   }
 
-  // 3. Prepare Diet Plan
+  // 3. Prepare Diet Plan (checks if user customized meals/schedule in the store)
+  const currentSavedDiet = store.S?.dietPlan || {};
   const dietPayload = nutritionPlan ? {
-    caloricTarget: nutritionPlan.caloricTarget || 2200,
+    caloricTarget: currentSavedDiet.caloricTarget || nutritionPlan.caloricTarget || 2200,
     strategy: nutritionPlan.strategy || 'Recomposição Corporal',
-    proteinGrams: nutritionPlan.macros?.proteinGrams || 160,
-    carbGrams: nutritionPlan.macros?.carbGrams || 220,
-    fatGrams: nutritionPlan.macros?.fatGrams || 65,
+    proteinGrams: nutritionPlan.macros?.proteinGrams || nutritionPlan.macronutrients?.protein || 160,
+    carbGrams: nutritionPlan.macros?.carbGrams || nutritionPlan.macronutrients?.carbohydrates || 220,
+    fatGrams: nutritionPlan.macros?.fatGrams || nutritionPlan.macronutrients?.fats || 65,
     hydrationLiters: nutritionPlan.hydrationLiters || 3.2,
-    meals: nutritionPlan.meals || [
+    mealsPerDay: currentSavedDiet.mealsPerDay || 4,
+    meals: currentSavedDiet.meals || nutritionPlan.meals || [
       { name: 'Café da Manhã', calories: 500, protein: 35, carbs: 55, fat: 15 },
       { name: 'Almoço', calories: 750, protein: 50, carbs: 80, fat: 20 },
       { name: 'Lanche da Tarde (Pré-Treino)', calories: 400, protein: 30, carbs: 50, fat: 10 },
