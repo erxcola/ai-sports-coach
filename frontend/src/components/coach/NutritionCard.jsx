@@ -8,6 +8,7 @@ import Icon from '../Icon.jsx';
 import { RECIPE_BOOK, getRecipesForMeal, generateModularDietSchedule } from '../../lib/ai/recipe-book.js';
 import { FOOD_SUBSTITUTIONS } from '../../lib/ai/food-substitutions.js';
 import { BeginnerGlossaryModal } from './BeginnerGlossaryModal.jsx';
+import { FoodSearchModal } from './FoodSearchModal.jsx';
 import { useUI } from '../../store/useUI.js';
 import { useStore } from '../../store/useStore.js';
 
@@ -33,6 +34,7 @@ export function NutritionCard({ plan }) {
   const [editingTimeMealId, setEditingTimeMealId] = useState(null);
   const [showSchedulePresets, setShowSchedulePresets] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
+  const [foodSearchTargetMeal, setFoodSearchTargetMeal] = useState(null);
 
   // Update meals schedule when mealCount changes
   const handleMealCountChange = (count) => {
@@ -111,6 +113,29 @@ export function NutritionCard({ plan }) {
     persistToStore(updated);
     setSubstitutionTargetMealId(null);
     useUI.getState().toast(`Refeição trocada por: ${recipe.name}!`);
+  };
+
+  // Applied food item from TACO database or Open Food Facts with calculated macros
+  const handleApplyTacoFood = ({ mealId, foodName, portionStr, grams, p, c, f, fiber, kcal, source }) => {
+    const updated = meals.map(m => {
+      if (m.id === mealId) {
+        const prevFood = m.defaultFood || '';
+        return {
+          ...m,
+          defaultFood: `${foodName} (${portionStr}) + ${prevFood.replace(/^[^+]+(?=\+|$)/, '')}`.trim().replace(/\+\s*\+/, '+'),
+          customSubApplied: `${foodName} (${portionStr})`,
+          calories: Math.round((m.calories || 0) * 0.4 + kcal),
+          protein: Math.round((m.protein || 35) * 0.4 + p),
+          carbs: Math.round((m.carbs || 40) * 0.4 + c),
+          fat: Math.round((m.fat || 10) * 0.4 + f)
+        };
+      }
+      return m;
+    });
+    setMeals(updated);
+    persistToStore(updated);
+    setFoodSearchTargetMeal(null);
+    useUI.getState().toast(`Alimento adicionado à refeição: ${foodName}!`);
   };
 
   // Time modification
@@ -356,6 +381,15 @@ export function NutritionCard({ plan }) {
                   >
                     {hasRecipe ? 'Trocar por Outra Receita Fit' : '📖 Escolher Receita Fit Completa'}
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon="search"
+                    onClick={() => setFoodSearchTargetMeal(meal)}
+                    style={{ width: '100%', justifyContent: 'center', marginTop: 4, borderColor: 'var(--blue)', color: 'var(--blue)' }}
+                  >
+                    🔍 Buscar na Tabela TACO / Open Food Facts
+                  </Button>
                 </div>
               </div>
             </Section>
@@ -512,7 +546,15 @@ export function NutritionCard({ plan }) {
         </div>
       )}
 
-      {/* 7. Beginner Glossary Modal */}
+      {/* 7. Food Search Modal (TACO & Open Food Facts) */}
+      <FoodSearchModal
+        isOpen={!!foodSearchTargetMeal}
+        targetMeal={foodSearchTargetMeal}
+        onClose={() => setFoodSearchTargetMeal(null)}
+        onApplyFood={handleApplyTacoFood}
+      />
+
+      {/* 8. Beginner Glossary Modal */}
       <BeginnerGlossaryModal
         isOpen={showGlossary}
         onClose={() => setShowGlossary(false)}
