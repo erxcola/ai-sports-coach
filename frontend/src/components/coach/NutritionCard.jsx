@@ -9,6 +9,7 @@ import { RECIPE_BOOK, getRecipesForMeal, generateModularDietSchedule } from '../
 import { FOOD_SUBSTITUTIONS } from '../../lib/ai/food-substitutions.js';
 import { BeginnerGlossaryModal } from './BeginnerGlossaryModal.jsx';
 import { FoodSearchModal } from './FoodSearchModal.jsx';
+import RecipeBookModal from './RecipeBookModal.jsx';
 import { useUI } from '../../store/useUI.js';
 import { useStore } from '../../store/useStore.js';
 
@@ -35,6 +36,8 @@ export function NutritionCard({ plan }) {
   const [showSchedulePresets, setShowSchedulePresets] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
   const [foodSearchTargetMeal, setFoodSearchTargetMeal] = useState(null);
+  const [recipeBookTargetMeal, setRecipeBookTargetMeal] = useState(null);
+  const [showFullRecipeBook, setShowFullRecipeBook] = useState(false);
 
   // Update meals schedule when mealCount changes
   const handleMealCountChange = (count) => {
@@ -94,17 +97,18 @@ export function NutritionCard({ plan }) {
     useUI.getState().toast(`Alimento substituído por: ${item.name}!`);
   };
 
-  // Whole recipe substitution
+  // Whole recipe substitution from legacy modal
   const handleApplyRecipe = (mealId, recipe) => {
     const updated = meals.map(m => {
       if (m.id === mealId) {
         return {
           ...m,
           currentRecipe: recipe,
+          defaultFood: recipe.title || recipe.name,
           calories: recipe.calories,
           protein: recipe.protein,
           carbs: recipe.carbs,
-          fat: recipe.fat
+          fat: recipe.fat || recipe.fats
         };
       }
       return m;
@@ -112,7 +116,33 @@ export function NutritionCard({ plan }) {
     setMeals(updated);
     persistToStore(updated);
     setSubstitutionTargetMealId(null);
-    useUI.getState().toast(`Refeição trocada por: ${recipe.name}!`);
+    useUI.getState().toast(`Refeição trocada por: ${recipe.title || recipe.name}!`);
+  };
+
+  // Recipe selection from 36-recipe encyclopedia modal
+  const handleApplyRecipeFromBook = (recipe, targetMeal) => {
+    const tMeal = targetMeal || (meals.length > 0 ? meals[0] : null);
+    if (!tMeal) return;
+
+    const updated = meals.map(m => {
+      if (m.id === tMeal.id) {
+        return {
+          ...m,
+          defaultFood: recipe.title,
+          currentRecipe: recipe,
+          calories: recipe.calories,
+          protein: recipe.protein,
+          carbs: recipe.carbs,
+          fat: recipe.fat || recipe.fats
+        };
+      }
+      return m;
+    });
+    setMeals(updated);
+    persistToStore(updated);
+    setRecipeBookTargetMeal(null);
+    setShowFullRecipeBook(false);
+    useUI.getState().toast(`Refeição alterada para: ${recipe.title}!`);
   };
 
   // Applied food item from TACO database or Open Food Facts with calculated macros
@@ -260,6 +290,45 @@ export function NutritionCard({ plan }) {
         </div>
       </Section>
 
+      {/* Banner Enciclopédia de Receitas Fit */}
+      <div style={{
+        marginTop: 14,
+        marginBottom: 8,
+        padding: '12px 14px',
+        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(16, 185, 129, 0.12))',
+        border: '1px solid rgba(59, 130, 246, 0.25)',
+        borderRadius: 12,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 10
+      }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--label)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>📖</span> Enciclopédia Fit (36 Receitas)
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--label-2)', marginTop: 2 }}>
+            Preparações com pesagem exata para Cutting, Bulking e Recomp
+          </div>
+        </div>
+        <button
+          onClick={() => setShowFullRecipeBook(true)}
+          style={{
+            flexShrink: 0,
+            padding: '7px 12px',
+            borderRadius: 8,
+            border: 'none',
+            background: 'var(--acc)',
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: 'pointer'
+          }}
+        >
+          Ver Todas ➔
+        </button>
+      </div>
+
       {/* 3. Meals List with Interactive Timings, Ingredient Swap & Recipe Book */}
       <div style={{ marginTop: 14 }}>
         {meals.map((meal) => {
@@ -376,10 +445,10 @@ export function NutritionCard({ plan }) {
                     size="sm"
                     variant="primary"
                     icon="sparkles"
-                    onClick={() => setSubstitutionTargetMealId(meal.id)}
+                    onClick={() => setRecipeBookTargetMeal(meal)}
                     style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}
                   >
-                    {hasRecipe ? 'Trocar por Outra Receita Fit' : '📖 Escolher Receita Fit Completa'}
+                    {hasRecipe ? '📖 Trocar por Outra Receita Fit (36 Opções)' : '📖 Escolher Receita da Enciclopédia'}
                   </Button>
                   <Button
                     size="sm"
@@ -554,7 +623,19 @@ export function NutritionCard({ plan }) {
         onApplyFood={handleApplyTacoFood}
       />
 
-      {/* 8. Beginner Glossary Modal */}
+      {/* 8. Recipe Book Modal (36 Preparações: Cutting, Bulking, Recomp) */}
+      <RecipeBookModal
+        isOpen={showFullRecipeBook || !!recipeBookTargetMeal}
+        targetMeal={recipeBookTargetMeal}
+        currentGoal={plan.strategy || plan.goal}
+        onClose={() => {
+          setShowFullRecipeBook(false);
+          setRecipeBookTargetMeal(null);
+        }}
+        onSelectRecipe={handleApplyRecipeFromBook}
+      />
+
+      {/* 9. Beginner Glossary Modal */}
       <BeginnerGlossaryModal
         isOpen={showGlossary}
         onClose={() => setShowGlossary(false)}
