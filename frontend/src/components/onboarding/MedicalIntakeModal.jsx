@@ -1,53 +1,143 @@
 /**
- * MedicalIntakeModal - Formulário de onboarding médico
- * React component para openGym
+ * MedicalIntakeModal - Formulário Moderno de Onboarding e Avaliação do AI Coach
+ * Interface redesenhada com Glassmorphism, Dark Mode e Seleção Visual de Biotipo
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ALL_ORTHOPEDIC_CONDITIONS, OrthopedicCondition } from '../../lib/types/biomechanics.js';
+import { createComputerVisionAnalyzer } from '../../lib/ai/computer-vision.js';
+import './medical-intake.css';
 
 const CONDITION_LABELS = {
   [OrthopedicCondition.SCOLIOSIS]: 'Escoliose',
   [OrthopedicCondition.KYPHOSIS]: 'Cifose Torácica',
   [OrthopedicCondition.LORDOSIS]: 'Lordose Lombar',
-  [OrthopedicCondition.KNEE_CHONDROMALACIA]: 'Condromalácia de Joelho',
+  [OrthopedicCondition.KNEE_CHONDROMALACIA]: 'Condromalácia Patelar',
   [OrthopedicCondition.PATELLAR_TENDINITIS]: 'Tendinite Patelar',
   [OrthopedicCondition.MENISCUS_PATHOLOGY]: 'Lesão Meniscal',
   [OrthopedicCondition.ACL_INSTABILITY]: 'Instabilidade LCA',
-  [OrthopedicCondition.SHOULDER_IMPINGEMENT]: 'Impingimento de Ombro',
+  [OrthopedicCondition.SHOULDER_IMPINGEMENT]: 'Impacto no Ombro',
   [OrthopedicCondition.ROTATOR_CUFF_TENDINITIS]: 'Tendinite Manguito Rotador',
   [OrthopedicCondition.GLENO_HUMERAL_ARTHRITIS]: 'Artrose Glenoumeral',
-  [OrthopedicCondition.AC_JOINT_OSTEOARTHRITIS]: 'Artrose Acromioclavicular',
-  [OrthopedicCondition.MEDIAL_EPICONDYLITIS]: 'Epicondilite Medial (Cotovelo Golfista)',
-  [OrthopedicCondition.LATERAL_EPICONDYLITIS]: 'Epicondilite Lateral (Tennis Elbow)',
+  [OrthopedicCondition.AC_JOINT_OSTEOARTHRITIS]: 'Artrose Acrômio-Clavicular',
+  [OrthopedicCondition.MEDIAL_EPICONDYLITIS]: 'Epicondilite Medial',
+  [OrthopedicCondition.LATERAL_EPICONDYLITIS]: 'Epicondilite Lateral',
   [OrthopedicCondition.ACHILLES_TENDINITIS]: 'Tendinite de Aquiles',
   [OrthopedicCondition.PLANTAR_FASCIITIS]: 'Fascite Plantar',
-  [OrthopedicCondition.ANKLE_INSTABILITY]: 'Instabilidade de Tornozelo',
-  [OrthopedicCondition.CARPAL_TUNNEL]: 'Síndrome do Túnel do Carpo',
+  [OrthopedicCondition.ANKLE_INSTABILITY]: 'Instabilidade Tornozelo',
+  [OrthopedicCondition.CARPAL_TUNNEL]: 'Túnel do Carpo',
   [OrthopedicCondition.POSTURAL_IMBALANCE]: 'Desequilíbrio Postural',
-  [OrthopedicCondition.FATIGUE_SYNDROME]: 'Síndrome de Fadiga Crônica'
+  [OrthopedicCondition.FATIGUE_SYNDROME]: 'Fadiga Crônica'
 };
 
-const GOAL_LABELS = {
-  hypertrophy: 'Hipertrofia Muscular',
-  recomp: 'Recomposição Corporal',
-  fat_loss: 'Perda de Gordura',
-  strength: 'Força Máxima'
-};
+const GOALS = [
+  {
+    id: 'hypertrophy',
+    icon: '🏆',
+    title: 'Hipertrofia Muscular',
+    desc: 'Ganho máximo de volume e massa muscular com superávit calórico limpo.'
+  },
+  {
+    id: 'recomp',
+    icon: '⚖️',
+    title: 'Recomposição Corporal',
+    desc: 'Construir massa magra e queimar gordura corporal simultaneamente.'
+  },
+  {
+    id: 'fat_loss',
+    icon: '🔥',
+    title: 'Definição / Cutting',
+    desc: 'Déficit calórico controlado preservando massa muscular e força.'
+  },
+  {
+    id: 'strength',
+    icon: '⚡',
+    title: 'Força Máxima',
+    desc: 'Adaptação neuromuscular e progressão focada em cargas pesadas.'
+  }
+];
+
+const MALE_BF_ARCHETYPES = [
+  { id: 'm_8_10', range: '8% – 10%', target: 9, label: 'Rasgado / Atleta', desc: 'Abdômen 6-pack e veias visíveis', iconType: 'shredded' },
+  { id: 'm_11_14', range: '11% – 14%', target: 12.5, label: 'Atlético / Definido', desc: 'Retos abdominais bem marcados', iconType: 'athletic' },
+  { id: 'm_15_18', range: '15% – 18%', target: 16.5, label: 'Fitness / Saudável', desc: 'Linha alba visível, flancos leves', iconType: 'fitness' },
+  { id: 'm_19_23', range: '19% – 23%', target: 21, label: 'Moderado', desc: 'Parede abdominal sem definição', iconType: 'moderate' },
+  { id: 'm_24_28', range: '24% – 28%', target: 26, label: 'Sobrepeso Leve', desc: 'Gordura localizada na cintura', iconType: 'soft' },
+  { id: 'm_29_plus', range: '29%+', target: 31, label: 'Elevado', desc: 'Maior volume na cintura e peitoral', iconType: 'heavy' }
+];
+
+const FEMALE_BF_ARCHETYPES = [
+  { id: 'f_14_17', range: '14% – 17%', target: 15.5, label: 'Competição / Atleta', desc: 'Linhas profundas, baixíssima gordura', iconType: 'shredded' },
+  { id: 'f_18_21', range: '18% – 21%', target: 19.5, label: 'Atlética / Fitness', desc: 'Abdômen plano e pernas firmes', iconType: 'athletic' },
+  { id: 'f_22_25', range: '22% – 25%', target: 23.5, label: 'Fitness / Saudável', desc: 'Curvas naturais com pouca gordura', iconType: 'fitness' },
+  { id: 'f_26_29', range: '26% – 29%', target: 27.5, label: 'Moderada', desc: 'Curvas suaves em coxas e quadril', iconType: 'moderate' },
+  { id: 'f_30_34', range: '30% – 34%', target: 32, label: 'Sobrepeso Leve', desc: 'Maior concentração nos quadris', iconType: 'soft' },
+  { id: 'f_35_plus', range: '35%+', target: 37, label: 'Elevado', desc: 'Volume corporal e retenção maiores', iconType: 'heavy' }
+];
 
 const ACTIVITY_LEVELS = [
-  { value: 'sedentary', label: 'Sedentário (pouco ou nenhum exercício)' },
-  { value: 'lightly_active', label: 'Levemente Ativo (exercício leve 1-3x/semana)' },
-  { value: 'moderately_active', label: 'Moderadamente Ativo (exercício moderado 3-5x/semana)' },
-  { value: 'very_active', label: 'Muito Ativo (exercício intenso 6-7x/semana)' },
-  { value: 'extra_active', label: 'Extra Ativo (exercício muito intenso + trabalho físico)' }
+  { value: 'sedentary', label: 'Sedentário', detail: 'Pouca ou nenhuma atividade diária' },
+  { value: 'lightly_active', label: 'Levemente Ativo', detail: 'Treino leve ou caminhada 1-3x/sem' },
+  { value: 'moderately_active', label: 'Moderadamente Ativo', detail: 'Treino 3-5x/sem com rotina ativa' },
+  { value: 'very_active', label: 'Muito Ativo', detail: 'Treino pesado 6-7x/semana' },
+  { value: 'extra_active', label: 'Extremamente Ativo', detail: 'Treino 2x/dia ou trabalho braçal' }
 ];
 
-const SEX_OPTIONS = [
-  { value: 'male', label: 'Masculino' },
-  { value: 'female', label: 'Feminino' },
-  { value: 'other', label: 'Outro/Prefiro não dizer' }
-];
+function SilhouetteIcon({ type }) {
+  if (type === 'shredded') {
+    return (
+      <svg viewBox="0 0 48 56" fill="currentColor" width="40" height="46">
+        <circle cx="24" cy="7" r="5" opacity="0.9" />
+        <path d="M14 15 L34 15 L30 33 L27 34 L27 48 L25 48 L25 36 L23 36 L23 48 L21 48 L21 34 L18 33 Z" />
+        {/* Abdominal 6-pack cuts */}
+        <line x1="24" y1="19" x2="24" y2="31" stroke="#16181f" strokeWidth="1.5" />
+        <line x1="20" y1="22" x2="28" y2="22" stroke="#16181f" strokeWidth="1.5" />
+        <line x1="21" y1="26" x2="27" y2="26" stroke="#16181f" strokeWidth="1.5" />
+      </svg>
+    );
+  }
+  if (type === 'athletic') {
+    return (
+      <svg viewBox="0 0 48 56" fill="currentColor" width="40" height="46">
+        <circle cx="24" cy="7" r="5" opacity="0.9" />
+        <path d="M15 15 L33 15 L29 33 L26 34 L26 48 L24.5 48 L24.5 36 L23.5 36 L23.5 48 L22 48 L22 34 L19 33 Z" />
+        <line x1="24" y1="20" x2="24" y2="30" stroke="#16181f" strokeWidth="1.5" />
+        <line x1="21" y1="24" x2="27" y2="24" stroke="#16181f" strokeWidth="1.5" />
+      </svg>
+    );
+  }
+  if (type === 'fitness') {
+    return (
+      <svg viewBox="0 0 48 56" fill="currentColor" width="40" height="46">
+        <circle cx="24" cy="7" r="5" opacity="0.9" />
+        <path d="M16 15 L32 15 L29 33 L26 34 L26 48 L24.5 48 L24.5 36 L23.5 36 L23.5 48 L22 48 L22 34 L19 33 Z" />
+        <line x1="24" y1="21" x2="24" y2="28" stroke="#16181f" strokeWidth="1.2" />
+      </svg>
+    );
+  }
+  if (type === 'moderate') {
+    return (
+      <svg viewBox="0 0 48 56" fill="currentColor" width="40" height="46">
+        <circle cx="24" cy="7" r="5" opacity="0.9" />
+        <path d="M16 15 L32 15 L30 33 L27 34 L27 48 L25 48 L25 36 L23 36 L23 48 L21 48 L21 34 L18 33 Z" />
+      </svg>
+    );
+  }
+  if (type === 'soft') {
+    return (
+      <svg viewBox="0 0 48 56" fill="currentColor" width="40" height="46">
+        <circle cx="24" cy="7" r="5.2" opacity="0.9" />
+        <path d="M15 15 L33 15 L32 34 L27 35 L27 48 L25 48 L25 36 L23 36 L23 48 L21 48 L21 35 L16 34 Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 48 56" fill="currentColor" width="40" height="46">
+      <circle cx="24" cy="7" r="5.5" opacity="0.9" />
+      <path d="M14 15 L34 15 L33.5 35 L28 36 L28 48 L25.5 48 L25.5 36 L22.5 36 L22.5 48 L20 48 L20 36 L14.5 35 Z" />
+    </svg>
+  );
+}
 
 export function MedicalIntakeModal({
   onSubmit,
@@ -56,11 +146,11 @@ export function MedicalIntakeModal({
   isOpen = true
 }) {
   const [form, setForm] = useState(initialValues || {
-    age: 30,
+    age: 28,
     sex: 'male',
-    height: 175,
-    weight: 70,
-    bodyFatPercentage: 20,
+    height: 178,
+    weight: 78,
+    bodyFatPercentage: 16.5,
     trainingAge: 2,
     goals: ['hypertrophy'],
     orthopedicConditions: [],
@@ -75,7 +165,7 @@ export function MedicalIntakeModal({
     },
     demographics: {
       dominantHand: 'right',
-      occupation: 'desk',
+      occupation: '',
       activityLevel: 'moderately_active'
     },
     profileImage: null
@@ -84,14 +174,19 @@ export function MedicalIntakeModal({
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [showManualBf, setShowManualBf] = useState(false);
+  const [selectedArchetypeId, setSelectedArchetypeId] = useState('m_15_18');
+  const fileInputRef = useRef(null);
 
   const steps = [
-    { id: 'basic', title: 'Dados Básicos', icon: '👤' },
+    { id: 'basic', title: 'Biometria', icon: '👤' },
     { id: 'goals', title: 'Objetivos', icon: '🎯' },
-    { id: 'medical', title: 'Histórico Médico', icon: '🏥' },
+    { id: 'medical', title: 'Ficha Médica', icon: '🏥' },
     { id: 'mobility', title: 'Mobilidade', icon: '🤸' },
-    { id: 'lifestyle', title: 'Estilo de Vida', icon: '💼' }
+    { id: 'lifestyle', title: 'Foto & Postura', icon: '📸' }
   ];
+
+  const archetypes = form.sex === 'female' ? FEMALE_BF_ARCHETYPES : MALE_BF_ARCHETYPES;
 
   useEffect(() => {
     if (initialValues) {
@@ -104,65 +199,25 @@ export function MedicalIntakeModal({
 
     switch (stepId) {
       case 'basic':
-        if (!form.age || form.age < 13 || form.age > 100) newErrors.age = 'Idade deve ser entre 13 e 100';
-        if (!form.height || form.height < 140 || form.height > 220) newErrors.height = 'Altura deve ser entre 140 e 220 cm';
-        if (!form.weight || form.weight < 40 || form.weight > 150) newErrors.weight = 'Peso deve ser entre 40 e 150 kg';
-        if (!form.bodyFatPercentage || form.bodyFatPercentage < 5 || form.bodyFatPercentage > 50) newErrors.bodyFatPercentage = '% gordura deve ser entre 5% e 50%';
+        if (!form.age || form.age < 13 || form.age > 100) newErrors.age = 'Idade entre 13 e 100 anos';
+        if (!form.height || form.height < 120 || form.height > 230) newErrors.height = 'Altura válida (120 - 230 cm)';
+        if (!form.weight || form.weight < 35 || form.weight > 250) newErrors.weight = 'Peso válido (35 - 250 kg)';
+        if (!form.bodyFatPercentage || form.bodyFatPercentage < 4 || form.bodyFatPercentage > 60) newErrors.bodyFatPercentage = '% gordura entre 4% e 60%';
         break;
       case 'goals':
-        if (!form.goals || form.goals.length === 0) newErrors.goals = 'Selecione pelo menos um objetivo';
+        if (!form.goals || form.goals.length === 0) newErrors.goals = 'Selecione pelo menos um objetivo principal';
         break;
       case 'medical':
-        // Medical conditions are optional
         break;
       case 'mobility':
-        const limits = form.mobilityLimits;
-        Object.entries(limits).forEach(([key, value]) => {
-          if (value < 0 || value > 180) newErrors[key] = `${key} deve ser entre 0° e 180°`;
-        });
         break;
       case 'lifestyle':
-        if (!form.demographics.occupation?.trim()) newErrors.occupation = 'Informe sua ocupação';
+        if (!form.demographics.occupation?.trim()) newErrors.occupation = 'Informe sua ocupação ou rotina';
         break;
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    const val = type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value);
-
-    if (name.includes('.')) {
-      // Nested property like mobilityLimits.shoulderFlexion
-      const [parent, child] = name.split('.');
-      setForm(prev => ({
-        ...prev,
-        [parent]: { ...prev[parent], [child]: val }
-      }));
-    } else if (name === 'goals') {
-      // Handle checkbox group
-      const currentGoals = form.goals || [];
-      const newGoals = checked
-        ? [...currentGoals, value]
-        : currentGoals.filter(g => g !== value);
-      setForm(prev => ({ ...prev, goals: newGoals }));
-    } else if (name === 'orthopedicConditions') {
-      // Handle checkbox group
-      const currentConditions = form.orthopedicConditions || [];
-      const newConditions = checked
-        ? [...currentConditions, value]
-        : currentConditions.filter(c => c !== value);
-      setForm(prev => ({ ...prev, orthopedicConditions: newConditions }));
-    } else {
-      setForm(prev => ({ ...prev, [name]: val }));
-    }
-
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
-    }
   };
 
   const handleNext = () => {
@@ -179,439 +234,526 @@ export function MedicalIntakeModal({
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const toggleGoal = (goalId) => {
+    const current = form.goals || [];
+    const next = current.includes(goalId)
+      ? current.filter(g => g !== goalId)
+      : [...current, goalId];
+    setForm(prev => ({ ...prev, goals: next.length ? next : [goalId] }));
+    if (errors.goals) setErrors(prev => ({ ...prev, goals: undefined }));
+  };
 
-    // Validate all steps
-    let allValid = true;
-    for (let i = 0; i < steps.length; i++) {
-      if (!validateStep(steps[i].id)) allValid = false;
-    }
-
-    if (!allValid) {
-      // Go to first invalid step
-      for (let i = 0; i < steps.length; i++) {
-        if (!validateStep(steps[i].id)) {
-          setCurrentStep(i);
-          break;
-        }
-      }
+  const toggleCondition = (cond) => {
+    if (cond === 'none') {
+      setForm(prev => ({ ...prev, orthopedicConditions: [] }));
       return;
     }
+    const current = form.orthopedicConditions || [];
+    const next = current.includes(cond)
+      ? current.filter(c => c !== cond)
+      : [...current, cond];
+    setForm(prev => ({ ...prev, orthopedicConditions: next }));
+  };
+
+  const handleArchetypeSelect = (arch) => {
+    setSelectedArchetypeId(arch.id);
+    setForm(prev => ({ ...prev, bodyFatPercentage: arch.target }));
+    if (errors.bodyFatPercentage) setErrors(prev => ({ ...prev, bodyFatPercentage: undefined }));
+  };
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setForm(prev => ({ ...prev, profileImage: event.target.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateStep(steps[currentStep].id)) return;
 
     setIsSubmitting(true);
-
     try {
-      // Process pain triggers string to array
       const painTriggers = form.painTriggers
-        ? form.painTriggers.split(',').map(t => t.trim()).filter(t => t.length > 0)
+        ? form.painTriggers.split(',').map(t => t.trim()).filter(Boolean)
         : [];
 
-      const submitData = {
+      await onSubmit({
         ...form,
-        painTriggers,
-        profileImage: form.profileImage
-      };
-
-      await onSubmit(submitData);
-    } catch (error) {
-      console.error('Erro ao submeter:', error);
-      alert('Erro ao processar formulário. Tente novamente.');
+        painTriggers
+      });
+    } catch (err) {
+      console.error('Erro ao enviar:', err);
+      alert('Erro ao gerar plano. Verifique os campos e tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   if (!isOpen) return null;
-
   const step = steps[currentStep];
 
   return (
-    <div className="medical-intake-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="medical-intake-modal" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="modal-header">
-          <div className="progress-bar">
+    <div className="medical-intake-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose?.()}>
+      <div className="medical-intake-modal" onClick={e => e.stopPropagation()}>
+        {/* Header com Stepper */}
+        <div className="intake-header">
+          <div className="intake-header-top">
+            <span className="intake-badge">🤖 AI Sports Coach • Avaliação Clínica</span>
+            {onClose && (
+              <button className="intake-close-btn" onClick={onClose} aria-label="Fechar">
+                &times;
+              </button>
+            )}
+          </div>
+
+          <div className="intake-stepper">
             {steps.map((s, i) => (
               <div
                 key={s.id}
-                className={`progress-step ${i < currentStep ? 'completed' : i === currentStep ? 'active' : ''}`}
+                className={`intake-step-pill ${i === currentStep ? 'active' : i < currentStep ? 'completed' : ''}`}
+                onClick={() => {
+                  if (i < currentStep) setCurrentStep(i);
+                }}
+                style={{ cursor: i < currentStep ? 'pointer' : 'default' }}
               >
-                <span className="step-icon">{s.icon}</span>
-                <span className="step-label">{s.title}</span>
+                <span>{i < currentStep ? '✓' : s.icon}</span>
+                <span>{s.title}</span>
               </div>
             ))}
           </div>
-          <button className="close-button" onClick={onClose} disabled={isSubmitting}>
-            ×
-          </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="modal-content">
-            {/* Step: Basic Info */}
-            {step.id === 'basic' && (
-              <div className="step-content">
-                <h3>Dados Pessoais</h3>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label htmlFor="age">Idade *</label>
+        {/* Formulário / Conteúdo da Etapa */}
+        <form onSubmit={handleSubmit} className="intake-body">
+          {/* ETAPA 1: BIOMETRIA */}
+          {step.id === 'basic' && (
+            <div>
+              <h2 className="step-heading">Dados Pessoais & Biometria</h2>
+              <p className="step-subtitle">Insira suas medidas corporais básicas e selecione o biotipo visual que mais se parece com você.</p>
+
+              <div className="form-grid-2">
+                <div className="form-item">
+                  <label className="form-label">Sexo Biológico</label>
+                  <div className="segmented-control">
+                    {[
+                      { val: 'male', label: 'Masculino' },
+                      { val: 'female', label: 'Feminino' },
+                      { val: 'other', label: 'Outro' }
+                    ].map(opt => (
+                      <button
+                        key={opt.val}
+                        type="button"
+                        className={`segmented-btn ${form.sex === opt.val ? 'active' : ''}`}
+                        onClick={() => {
+                          setForm(f => ({ ...f, sex: opt.val }));
+                          setSelectedArchetypeId(opt.val === 'female' ? 'f_22_25' : 'm_15_18');
+                          setForm(f => ({ ...f, bodyFatPercentage: opt.val === 'female' ? 23.5 : 16.5 }));
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-item">
+                  <label className="form-label" htmlFor="age">Idade</label>
+                  <div className="form-input-box">
                     <input
                       id="age"
-                      name="age"
                       type="number"
+                      className="form-input"
                       value={form.age}
-                      onChange={handleChange}
+                      onChange={e => setForm(f => ({ ...f, age: +e.target.value }))}
                       min={13}
                       max={100}
-                      required
                     />
-                    {errors.age && <span className="error">{errors.age}</span>}
+                    <span className="form-input-unit">anos</span>
                   </div>
+                  {errors.age && <span className="form-error">{errors.age}</span>}
+                </div>
 
-                  <div className="form-group">
-                    <label htmlFor="sex">Sexo *</label>
-                    <select
-                      id="sex"
-                      name="sex"
-                      value={form.sex}
-                      onChange={handleChange}
-                      required
-                    >
-                      {SEX_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="height">Altura (cm) *</label>
+                <div className="form-item">
+                  <label className="form-label" htmlFor="height">Altura</label>
+                  <div className="form-input-box">
                     <input
                       id="height"
-                      name="height"
                       type="number"
+                      className="form-input"
                       value={form.height}
-                      onChange={handleChange}
-                      min={140}
-                      max={220}
-                      required
+                      onChange={e => setForm(f => ({ ...f, height: +e.target.value }))}
+                      min={120}
+                      max={230}
                     />
-                    {errors.height && <span className="error">{errors.height}</span>}
+                    <span className="form-input-unit">cm</span>
                   </div>
+                  {errors.height && <span className="form-error">{errors.height}</span>}
+                </div>
 
-                  <div className="form-group">
-                    <label htmlFor="weight">Peso (kg) *</label>
+                <div className="form-item">
+                  <label className="form-label" htmlFor="weight">Peso Corporal</label>
+                  <div className="form-input-box">
                     <input
                       id="weight"
-                      name="weight"
                       type="number"
+                      step="0.1"
+                      className="form-input"
                       value={form.weight}
-                      onChange={handleChange}
-                      min={40}
-                      max={150}
-                      step={0.1}
-                      required
+                      onChange={e => setForm(f => ({ ...f, weight: +e.target.value }))}
+                      min={35}
+                      max={250}
                     />
-                    {errors.weight && <span className="error">{errors.weight}</span>}
+                    <span className="form-input-unit">kg</span>
                   </div>
+                  {errors.weight && <span className="form-error">{errors.weight}</span>}
+                </div>
 
-                  <div className="form-group">
-                    <label htmlFor="bodyFatPercentage">% Gordura Corporal *</label>
-                    <input
-                      id="bodyFatPercentage"
-                      name="bodyFatPercentage"
-                      type="number"
-                      value={form.bodyFatPercentage}
-                      onChange={handleChange}
-                      min={5}
-                      max={50}
-                      step={0.1}
-                      required
-                    />
-                    <small>Estimativa visual ou bioimpedância</small>
-                    {errors.bodyFatPercentage && <span className="error">{errors.bodyFatPercentage}</span>}
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="trainingAge">Anos de Treino *</label>
+                <div className="form-item">
+                  <label className="form-label" htmlFor="trainingAge">Experiência de Musculação</label>
+                  <div className="form-input-box">
                     <input
                       id="trainingAge"
-                      name="trainingAge"
                       type="number"
+                      className="form-input"
                       value={form.trainingAge}
-                      onChange={handleChange}
+                      onChange={e => setForm(f => ({ ...f, trainingAge: +e.target.value }))}
                       min={0}
-                      max={50}
-                      required
+                      max={40}
                     />
-                    <small>0 = iniciante total</small>
+                    <span className="form-input-unit">anos</span>
                   </div>
+                  <span className="form-hint">0 = iniciante; 2+ = intermediário/avançado</span>
                 </div>
               </div>
-            )}
 
-            {/* Step: Goals */}
-            {step.id === 'goals' && (
-              <div className="step-content">
-                <h3>Quais são seus objetivos?</h3>
-                <p className="step-description">Selecione todos que se aplicam (máximo 2 recomendado)</p>
-                <div className="goals-grid">
-                  {Object.entries(GOAL_LABELS).map(([value, label]) => (
-                    <label key={value} className={`goal-card ${form.goals.includes(value) ? 'selected' : ''}`}>
-                      <input
-                        type="checkbox"
-                        name="goals"
-                        value={value}
-                        checked={form.goals.includes(value)}
-                        onChange={handleChange}
-                      />
-                      <span className="goal-label">{label}</span>
-                    </label>
-                  ))}
-                </div>
-                {errors.goals && <span className="error">{errors.goals}</span>}
-              </div>
-            )}
-
-            {/* Step: Medical History */}
-            {step.id === 'medical' && (
-              <div className="step-content">
-                <h3>Condições Ortopédicas / Lesões</h3>
-                <p className="step-description">
-                  Marque todas as condições diagnosticadas por profissional de saúde.
-                  Isso garante que seu treino seja seguro e adaptado.
-                </p>
-
-                <div className="conditions-grid">
-                  {ALL_ORTHOPEDIC_CONDITIONS
-                    .filter(c => c !== 'none')
-                    .map(condition => (
-                      <label key={condition} className={`condition-card ${form.orthopedicConditions.includes(condition) ? 'selected' : ''}`}>
-                        <input
-                          type="checkbox"
-                          name="orthopedicConditions"
-                          value={condition}
-                          checked={form.orthopedicConditions.includes(condition)}
-                          onChange={handleChange}
-                        />
-                        <span className="condition-label">{CONDITION_LABELS[condition] || condition}</span>
-                      </label>
-                    ))}
-                  <label className="condition-card none-option">
-                    <input
-                      type="checkbox"
-                      name="orthopedicConditions"
-                      value="none"
-                      checked={form.orthopedicConditions.includes('none')}
-                      onChange={handleChange}
-                    />
-                    <span className="condition-label">✓ Nenhuma condição diagnosticada</span>
+              {/* SELETOR VISUAL DE GORDURA CORPORAL (% BF) */}
+              <div className="form-item full-span" style={{ marginTop: 18 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <label className="form-label" style={{ margin: 0, fontSize: 14 }}>
+                    Com qual físico você mais se parece atualmente?
                   </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowManualBf(!showManualBf)}
+                    style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    {showManualBf ? '👁️ Voltar à seleção visual' : '✏️ Digitar % exato'}
+                  </button>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="painTriggers">Gatilhos de Dor (opcional)</label>
-                  <textarea
-                    id="painTriggers"
-                    name="painTriggers"
-                    value={form.painTriggers}
-                    onChange={handleChange}
-                    placeholder="Ex: agachamento profundo, levantamento terra, press militar, etc."
-                    rows={3}
-                  />
-                  <small>Separe por vírgula. Exercícios ou movimentos que causam dor.</small>
-                </div>
+                {showManualBf ? (
+                  <div style={{ marginTop: 8 }}>
+                    <div className="form-input-box">
+                      <input
+                        id="bf"
+                        type="number"
+                        step="0.1"
+                        className="form-input"
+                        value={form.bodyFatPercentage}
+                        onChange={e => {
+                          const val = +e.target.value;
+                          setForm(f => ({ ...f, bodyFatPercentage: val }));
+                          setSelectedArchetypeId(null);
+                        }}
+                        min={4}
+                        max={60}
+                      />
+                      <span className="form-input-unit">%</span>
+                    </div>
+                    <span className="form-hint">Inserção manual para quem possui bioimpedância InBody ou DEXA Scan.</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bf-archetype-grid">
+                      {archetypes.map(arch => {
+                        const isSelected = selectedArchetypeId === arch.id || (!selectedArchetypeId && form.bodyFatPercentage === arch.target);
+                        return (
+                          <div
+                            key={arch.id}
+                            className={`bf-archetype-card ${isSelected ? 'selected' : ''}`}
+                            onClick={() => handleArchetypeSelect(arch)}
+                          >
+                            <div className="bf-silhouette-icon">
+                              <SilhouetteIcon type={arch.iconType} />
+                            </div>
+                            <span className="bf-range-badge">{arch.range}</span>
+                            <span className="bf-archetype-title">{arch.label}</span>
+                            <span className="bf-archetype-desc">{arch.desc}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="bf-custom-toggle-bar">
+                      <span style={{ fontSize: 12, color: '#9ca3af' }}>
+                        Percentual selecionado: <strong style={{ color: '#3b82f6' }}>{form.bodyFatPercentage}%</strong>
+                      </span>
+                      <span style={{ fontSize: 11, color: '#6b7280' }}>
+                        A foto completa será enviada na Etapa 5 para análise postural por IA.
+                      </span>
+                    </div>
+                  </>
+                )}
+                {errors.bodyFatPercentage && <span className="form-error">{errors.bodyFatPercentage}</span>}
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Step: Mobility */}
-            {step.id === 'mobility' && (
-              <div className="step-content">
-                <h3>Limites de Mobilidade Atual</h3>
-                <p className="step-description">
-                  Indique sua amplitude de movimento aproximada em graus.
-                  Se não souber, deixe os valores padrão (máxima amplitude).
-                </p>
-                <div className="mobility-grid">
-                  <div className="mobility-item">
-                    <label htmlFor="shoulderFlexion">Flexão de Ombro (°)</label>
-                    <input
-                      id="shoulderFlexion"
-                      name="mobilityLimits.shoulderFlexion"
-                      type="range"
-                      min={0}
-                      max={180}
-                      value={form.mobilityLimits.shoulderFlexion}
-                      onChange={handleChange}
-                    />
-                    <span className="range-value">{form.mobilityLimits.shoulderFlexion}°</span>
-                    {errors.shoulderFlexion && <span className="error">{errors.shoulderFlexion}</span>}
-                  </div>
+          {/* ETAPA 2: OBJETIVOS */}
+          {step.id === 'goals' && (
+            <div>
+              <h2 className="step-heading">Objetivo Principal</h2>
+              <p className="step-subtitle">Selecione a meta para calibrarmos a periodização de treino e as calorias da dieta.</p>
 
-                  <div className="mobility-item">
-                    <label htmlFor="shoulderAbduction">Abdução de Ombro (°)</label>
-                    <input
-                      id="shoulderAbduction"
-                      name="mobilityLimits.shoulderAbduction"
-                      type="range"
-                      min={0}
-                      max={180}
-                      value={form.mobilityLimits.shoulderAbduction}
-                      onChange={handleChange}
-                    />
-                    <span className="range-value">{form.mobilityLimits.shoulderAbduction}°</span>
-                    {errors.shoulderAbduction && <span className="error">{errors.shoulderAbduction}</span>}
-                  </div>
-
-                  <div className="mobility-item">
-                    <label htmlFor="kneeFlexion">Flexão de Joelho (°)</label>
-                    <input
-                      id="kneeFlexion"
-                      name="mobilityLimits.kneeFlexion"
-                      type="range"
-                      min={0}
-                      max={160}
-                      value={form.mobilityLimits.kneeFlexion}
-                      onChange={handleChange}
-                    />
-                    <span className="range-value">{form.mobilityLimits.kneeFlexion}°</span>
-                    {errors.kneeFlexion && <span className="error">{errors.kneeFlexion}</span>}
-                  </div>
-
-                  <div className="mobility-item">
-                    <label htmlFor="hipFlexion">Flexão de Quadril (°)</label>
-                    <input
-                      id="hipFlexion"
-                      name="mobilityLimits.hipFlexion"
-                      type="range"
-                      min={0}
-                      max={160}
-                      value={form.mobilityLimits.hipFlexion}
-                      onChange={handleChange}
-                    />
-                    <span className="range-value">{form.mobilityLimits.hipFlexion}°</span>
-                    {errors.hipFlexion && <span className="error">{errors.hipFlexion}</span>}
-                  </div>
-
-                  <div className="mobility-item">
-                    <label htmlFor="thoracicExtension">Extensão Torácica (°)</label>
-                    <input
-                      id="thoracicExtension"
-                      name="mobilityLimits.thoracicExtension"
-                      type="range"
-                      min={0}
-                      max={60}
-                      value={form.mobilityLimits.thoracicExtension}
-                      onChange={handleChange}
-                    />
-                    <span className="range-value">{form.mobilityLimits.thoracicExtension}°</span>
-                    {errors.thoracicExtension && <span className="error">{errors.thoracicExtension}</span>}
-                  </div>
-
-                  <div className="mobility-item">
-                    <label htmlFor="lumbarFlexion">Flexão Lombar (°)</label>
-                    <input
-                      id="lumbarFlexion"
-                      name="mobilityLimits.lumbarFlexion"
-                      type="range"
-                      min={0}
-                      max={60}
-                      value={form.mobilityLimits.lumbarFlexion}
-                      onChange={handleChange}
-                    />
-                    <span className="range-value">{form.mobilityLimits.lumbarFlexion}°</span>
-                    {errors.lumbarFlexion && <span className="error">{errors.lumbarFlexion}</span>}
-                  </div>
-                </div>
+              <div className="goals-select-grid">
+                {GOALS.map(g => {
+                  const isSelected = form.goals.includes(g.id);
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      className={`goal-card-btn ${isSelected ? 'selected' : ''}`}
+                      onClick={() => toggleGoal(g.id)}
+                    >
+                      <span className="goal-card-icon">{g.icon}</span>
+                      <span className="goal-card-title">{g.title}</span>
+                      <span className="goal-card-desc">{g.desc}</span>
+                    </button>
+                  );
+                })}
               </div>
-            )}
+              {errors.goals && <p className="form-error" style={{ marginTop: 12 }}>{errors.goals}</p>}
+            </div>
+          )}
 
-            {/* Step: Lifestyle */}
-            {step.id === 'lifestyle' && (
-              <div className="step-content">
-                <h3>Estilo de Vida e Demografia</h3>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label htmlFor="dominantHand">Mão Dominante</label>
-                    <select
-                      id="dominantHand"
-                      name="dominantHand"
-                      value={form.demographics.dominantHand}
-                      onChange={handleChange}
+          {/* ETAPA 3: HISTÓRICO MÉDICO */}
+          {step.id === 'medical' && (
+            <div>
+              <h2 className="step-heading">Ficha Médica & Articulações</h2>
+              <p className="step-subtitle">Marque condições diagnosticadas. O motor biomecânico filtrará exercícios com compressão perigosa.</p>
+
+              <div className="conditions-cloud">
+                <button
+                  type="button"
+                  className={`condition-chip none-chip ${form.orthopedicConditions.length === 0 ? 'selected' : ''}`}
+                  onClick={() => toggleCondition('none')}
+                >
+                  ✓ Nenhuma condição diagnosticada
+                </button>
+
+                {ALL_ORTHOPEDIC_CONDITIONS.filter(c => c !== 'none').map(cond => {
+                  const isSelected = form.orthopedicConditions.includes(cond);
+                  return (
+                    <button
+                      key={cond}
+                      type="button"
+                      className={`condition-chip ${isSelected ? 'selected' : ''}`}
+                      onClick={() => toggleCondition(cond)}
                     >
-                      <option value="right">Direita</option>
-                      <option value="left">Esquerda</option>
-                    </select>
-                  </div>
+                      {isSelected ? '✕ ' : '+ '}
+                      {CONDITION_LABELS[cond] || cond}
+                    </button>
+                  );
+                })}
+              </div>
 
-                  <div className="form-group">
-                    <label htmlFor="occupation">Ocupação *</label>
+              <div className="form-item" style={{ marginTop: 16 }}>
+                <label className="form-label" htmlFor="painTriggers">Gatilhos de Dor ou Desconforto (opcional)</label>
+                <textarea
+                  id="painTriggers"
+                  className="form-input"
+                  style={{ minHeight: 70, resize: 'vertical' }}
+                  placeholder="Ex: agachamento profundo, supino com barra reta, desenvolvimento militar..."
+                  value={form.painTriggers}
+                  onChange={e => setForm(f => ({ ...f, painTriggers: e.target.value }))}
+                />
+                <span className="form-hint">Exercícios que causam pontadas ou dor articular (separados por vírgula).</span>
+              </div>
+            </div>
+          )}
+
+          {/* ETAPA 4: TESTE DE MOBILIDADE */}
+          {step.id === 'mobility' && (
+            <div>
+              <h2 className="step-heading">Amplitude & Mobilidade Articular</h2>
+              <p className="step-subtitle">Ajuste os controles com base no seu alcance. O algoritmo evitará movimentos além do seu limiar seguro.</p>
+
+              {[
+                { key: 'shoulderFlexion', label: 'Flexão de Ombro (elevação dos braços à frente)', max: 180, normal: 180 },
+                { key: 'shoulderAbduction', label: 'Abdução de Ombro (abertura lateral dos braços)', max: 180, normal: 180 },
+                { key: 'kneeFlexion', label: 'Flexão de Joelho (dobra da perna para trás)', max: 160, normal: 150 },
+                { key: 'hipFlexion', label: 'Flexão de Quadril (joelho em direção ao peito)', max: 160, normal: 150 },
+                { key: 'thoracicExtension', label: 'Extensão Torácica (abertura do peito para trás)', max: 60, normal: 40 },
+                { key: 'lumbarFlexion', label: 'Flexão Lombar (inclinação à frente tocando os pés)', max: 60, normal: 40 }
+              ].map(m => {
+                const val = form.mobilityLimits[m.key] ?? m.normal;
+                const isLimited = val < m.normal * 0.85;
+                return (
+                  <div key={m.key} className="mobility-slider-card">
+                    <div className="mobility-slider-header">
+                      <span className="mobility-title">{m.label}</span>
+                      <span
+                        className="mobility-val-badge"
+                        style={isLimited ? { background: 'rgba(239,68,68,0.15)', color: '#f87171', borderColor: 'rgba(239,68,68,0.3)' } : undefined}
+                      >
+                        {val}° {isLimited ? '(Restrito)' : '(Normal)'}
+                      </span>
+                    </div>
                     <input
-                      id="occupation"
-                      name="demographics.occupation"
-                      type="text"
-                      value={form.demographics.occupation}
-                      onChange={handleChange}
-                      placeholder="Ex: escritório, professor, atleta, etc."
+                      type="range"
+                      className="mobility-slider"
+                      min={0}
+                      max={m.max}
+                      value={val}
+                      onChange={e => {
+                        const num = +e.target.value;
+                        setForm(f => ({
+                          ...f,
+                          mobilityLimits: { ...f.mobilityLimits, [m.key]: num }
+                        }));
+                      }}
                     />
-                    {errors.occupation && <span className="error">{errors.occupation}</span>}
                   </div>
+                );
+              })}
+            </div>
+          )}
 
-                  <div className="form-group full-width">
-                    <label htmlFor="activityLevel">Nível de Atividade Diária *</label>
-                    <select
-                      id="activityLevel"
-                      name="demographics.activityLevel"
-                      value={form.demographics.activityLevel}
-                      onChange={handleChange}
-                    >
-                      {ACTIVITY_LEVELS.map(level => (
-                        <option key={level.value} value={level.value}>{level.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+          {/* ETAPA 5: ESTILO DE VIDA & UPLOAD DE FOTO POSTURAL */}
+          {step.id === 'lifestyle' && (
+            <div>
+              <h2 className="step-heading">Foto Corporal para Análise Postural & Rotina</h2>
+              <p className="step-subtitle">Suba sua foto corporal completa para a IA detectar desvios posturais (cifose, ombros, lordose) e músculos atrasados.</p>
 
-                <div className="form-group full-width">
-                  <label htmlFor="profileImage">Foto de Perfil (opcional)</label>
+              <div className="form-item" style={{ marginBottom: 16 }}>
+                <label className="form-label">Foto do Físico (Frontal ou Tronco Inteiro)</label>
+                <div
+                  className="photo-upload-zone"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <input
-                    id="profileImage"
-                    name="profileImage"
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          setForm(prev => ({ ...prev, profileImage: event.target.result }));
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
+                    style={{ display: 'none' }}
+                    onChange={handlePhotoUpload}
                   />
-                  <small>Foto frontal relaxada. Usada para análise de postura por IA (futuro).</small>
+
+                  {form.profileImage ? (
+                    <div className="photo-preview-wrap">
+                      <img src={form.profileImage} alt="Foto de perfil" className="photo-preview-img" />
+                      <button
+                        type="button"
+                        className="btn-intake-back"
+                        style={{ padding: '6px 14px', fontSize: 12 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          fileInputRef.current?.click();
+                        }}
+                      >
+                        🔄 Trocar Foto
+                      </button>
+                      <span className="form-hint" style={{ color: '#34d399', fontWeight: 600 }}>
+                        ✓ Foto carregada para o scanner postural da IA
+                      </span>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ fontSize: 36, marginBottom: 8 }}>📸</div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#f3f4f6' }}>Clique para enviar sua foto</div>
+                      <div className="form-hint" style={{ marginTop: 4 }}>
+                        Foto de corpo inteiro em pé, relaxado. A IA analisará cabeça anterior, cifose, simetria escapular e desequilíbrios musculares.
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Navigation */}
-          <div className="modal-footer">
+              <div className="form-grid-2">
+                <div className="form-item">
+                  <label className="form-label" htmlFor="occupation">Ocupação / Trabalho</label>
+                  <input
+                    id="occupation"
+                    type="text"
+                    className="form-input"
+                    placeholder="Ex: Trabalho em escritório sentado, estudante..."
+                    value={form.demographics.occupation}
+                    onChange={e => setForm(f => ({
+                      ...f,
+                      demographics: { ...f.demographics, occupation: e.target.value }
+                    }))}
+                  />
+                  {errors.occupation && <span className="form-error">{errors.occupation}</span>}
+                </div>
+
+                <div className="form-item">
+                  <label className="form-label">Mão Dominante</label>
+                  <div className="segmented-control">
+                    {[
+                      { val: 'right', label: 'Destro' },
+                      { val: 'left', label: 'Canhoto' }
+                    ].map(opt => (
+                      <button
+                        key={opt.val}
+                        type="button"
+                        className={`segmented-btn ${form.demographics.dominantHand === opt.val ? 'active' : ''}`}
+                        onClick={() => setForm(f => ({
+                          ...f,
+                          demographics: { ...f.demographics, dominantHand: opt.val }
+                        }))}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-item full-span">
+                  <label className="form-label">Nível de Atividade Geral no Dia a Dia</label>
+                  <div className="segmented-control" style={{ flexDirection: 'column' }}>
+                    {ACTIVITY_LEVELS.map(act => {
+                      const isSel = form.demographics.activityLevel === act.value;
+                      return (
+                        <button
+                          key={act.value}
+                          type="button"
+                          className={`segmented-btn ${isSel ? 'active' : ''}`}
+                          style={{ textAlign: 'left', padding: '10px 14px' }}
+                          onClick={() => setForm(f => ({
+                            ...f,
+                            demographics: { ...f.demographics, activityLevel: act.value }
+                          }))}
+                        >
+                          <div style={{ fontWeight: 700, color: isSel ? '#ffffff' : '#e5e7eb' }}>{act.label}</div>
+                          <div style={{ fontSize: 12, opacity: 0.8, fontWeight: 400 }}>{act.detail}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Footer com Botões de Navegação */}
+          <div className="intake-footer">
             {currentStep > 0 && (
-              <button type="button" className="btn-secondary" onClick={handleBack} disabled={isSubmitting}>
-                ← Voltar
+              <button type="button" className="btn-intake-back" onClick={handleBack} disabled={isSubmitting}>
+                &larr; Voltar
               </button>
             )}
 
             {currentStep < steps.length - 1 ? (
-              <button type="button" className="btn-primary" onClick={handleNext} disabled={isSubmitting}>
-                Próximo →
+              <button type="button" className="btn-intake-next" onClick={handleNext} disabled={isSubmitting}>
+                Avançar &rarr;
               </button>
             ) : (
-              <button type="submit" className="btn-primary" disabled={isSubmitting}>
-                {isSubmitting ? 'Processando...' : 'Gerar Meu Plano'}
+              <button type="submit" className="btn-intake-next" disabled={isSubmitting}>
+                {isSubmitting ? 'Gerando Plano Personalizado...' : '✨ Gerar Plano Completo'}
               </button>
             )}
           </div>

@@ -106,6 +106,38 @@ export default function Home() {
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={trouble ? t('Settings') + ', ' + t('Connection problem') : t('Settings')}><Icon name="gear" />{trouble && <span className="tab-dot" aria-hidden="true" />}</button>
     </div>
 
+    {/* AI Sports Coach Banner */}
+    <div
+      className="card tappable"
+      style={{
+        cursor: 'pointer',
+        background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(16,185,129,0.10))',
+        border: '1px solid rgba(59,130,246,0.3)',
+        marginBottom: 12
+      }}
+      {...tappable(() => nav('/aicoach'))}
+    >
+      <div className="row between" style={{ alignItems: 'center' }}>
+        <div className="row" style={{ gap: 12, alignItems: 'center' }}>
+          <span className="lrow-i" style={{ background: 'var(--blue, #3b82f6)', fontSize: 24, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12 }}>
+            🤖
+          </span>
+          <div>
+            <div className="lbl2" style={{ color: 'var(--blue, #3b82f6)', fontWeight: 700, letterSpacing: '0.05em', fontSize: 11 }}>
+              NOVO • INTELIGÊNCIA ARTIFICIAL
+            </div>
+            <div className="ttl" style={{ fontSize: 17, fontWeight: 700, marginTop: 1 }}>
+              AI Sports Coach
+            </div>
+            <div className="muted small" style={{ marginTop: 2 }}>
+              Avaliação por foto, periodização, nutrição clínica e segurança biomecânica
+            </div>
+          </div>
+        </div>
+        <Icon name="chevronRight" className="chev" style={{ fontSize: 20 }} />
+      </div>
+    </div>
+
     <div className="card">
       {/* A coach week runs by order, not by weekday, so its progress row stands in for the
           seven dots (components/QueueRow.jsx). The today row below stays as it is: the queue's

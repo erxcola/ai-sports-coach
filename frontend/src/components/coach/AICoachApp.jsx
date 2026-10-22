@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAICoach } from '../../hooks/useAICoach';
 import { MedicalIntakeModal } from '../onboarding/MedicalIntakeModal';
 import { CoachDashboard } from './CoachDashboard';
+import './coach-styles.css';
 
 export function AICoachApp() {
   const {
@@ -117,21 +118,17 @@ export function AICoachApp() {
         <MedicalIntakeModal
           isOpen={showIntake || !intakeCompleted}
           onSubmit={handleIntakeSubmit}
-          onClose={() => {
-            if (!intakeCompleted) {
-              // Se não completou, não deixa fechar
-              return;
-            }
-            setShowIntake(false);
-          }}
+          onClose={intakeCompleted ? () => setShowIntake(false) : undefined}
         />
 
         {/* Coach Dashboard */}
-        <CoachDashboard
-          recommendations={recommendations}
-          api={{ reset }}
-          onRetakePhotos={handleRetakePhotos}
-        />
+        {intakeCompleted && recommendations && (
+          <CoachDashboard
+            recommendations={recommendations}
+            api={{ reset }}
+            onRetakePhotos={handleRetakePhotos}
+          />
+        )}
       </main>
 
       {/* Footer */}
