@@ -57,7 +57,7 @@ function cachedDefaultLang() {
  * stands in for it; with none seen yet the copy's stored language is used unchanged.
  */
 export function effectiveLang(S, config, navLangs = browserLangs()) {
-  const own = (S && typeof S.lang === 'string' && S.lang) || 'en'
+  const own = (S && typeof S.lang === 'string' && S.lang) || 'pt-BR'
   if (!S || S.langAuto !== true) return own
   let cfg = config
   if (!cfg) {
@@ -65,7 +65,7 @@ export function effectiveLang(S, config, navLangs = browserLangs()) {
     if (seen === null) return own
     cfg = { default_lang: seen }
   }
-  return autoLang(S, cfg, navLangs) || own
+  return autoLang(S, cfg, navLangs) || 'pt-BR'
 }
 
 export function browserLangs() {

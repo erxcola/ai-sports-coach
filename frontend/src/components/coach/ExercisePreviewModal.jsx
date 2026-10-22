@@ -5,9 +5,13 @@ import React from 'react';
 import Media from '../Media.jsx';
 import { Button } from '../ui.jsx';
 import Icon from '../Icon.jsx';
+import { getExerciseBiomechanics } from '../../lib/ai/exercise-science.js';
 
 export function ExercisePreviewModal({ exercise, isOpen, onClose }) {
   if (!isOpen || !exercise) return null;
+
+  const exerciseName = exercise.ptName || exercise.name || exercise.n || '';
+  const biomechanics = getExerciseBiomechanics(exerciseName, exercise.bp || exercise.muscleGroup || '');
 
   return (
     <div className="mobility-modal-backdrop" onClick={onClose}>
@@ -53,10 +57,54 @@ export function ExercisePreviewModal({ exercise, isOpen, onClose }) {
           </div>
 
           {exercise.orthopedicNotes && (
-            <div style={{ fontSize: 12, background: 'rgba(255, 149, 0, 0.1)', border: '1px solid rgba(255, 149, 0, 0.3)', padding: '10px 12px', borderRadius: 8, color: 'var(--orange)' }}>
+            <div style={{ fontSize: 12, background: 'rgba(255, 149, 0, 0.1)', border: '1px solid rgba(255, 149, 0, 0.3)', padding: '10px 12px', borderRadius: 8, color: 'var(--orange)', marginBottom: 12 }}>
               🛡️ <strong>Ajuste Ortopédico Especial:</strong> {exercise.orthopedicNotes}
             </div>
           )}
+
+          {/* Biomechanics and Technical Cues Card */}
+          <div style={{
+            backgroundColor: 'rgba(59, 130, 246, 0.08)',
+            border: '1px solid rgba(59, 130, 246, 0.25)',
+            borderRadius: 10,
+            padding: '12px',
+            marginBottom: 8
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#93c5fd', display: 'flex', alignItems: 'center', gap: 6 }}>
+                🔬 Biomecânica & Hipertrofia
+              </span>
+              <span style={{ fontSize: 10.5, padding: '2px 6px', borderRadius: 4, background: 'rgba(59, 130, 246, 0.2)', color: '#bfdbfe' }}>
+                {biomechanics.padrao}
+              </span>
+            </div>
+
+            <div style={{ fontSize: 12, color: 'var(--label-2)', marginBottom: 6 }}>
+              ⚡ <strong>Tensão por Estiramento:</strong> {biomechanics.estiramento}
+            </div>
+
+            <div style={{ fontSize: 12, color: 'var(--label-2)', marginBottom: 6 }}>
+              🎯 <strong>Cues Principais:</strong>
+              <ul style={{ margin: '4px 0 0 0', paddingLeft: 18 }}>
+                {biomechanics.cues.slice(0, 3).map((cue, i) => (
+                  <li key={i} style={{ marginBottom: 2 }}>{cue}</li>
+                ))}
+              </ul>
+            </div>
+
+            {biomechanics.pmid && (
+              <div style={{ fontSize: 11, textAlign: 'right', marginTop: 4 }}>
+                <a
+                  href={`https://pubmed.ncbi.nlm.nih.gov/${biomechanics.pmid}/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#60a5fa', textDecoration: 'none', fontWeight: 600 }}
+                >
+                  Estudo Científico (PubMed #{biomechanics.pmid}) ↗
+                </a>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Close Button */}

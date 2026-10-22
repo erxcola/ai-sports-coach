@@ -57,7 +57,7 @@ export function derivePack(l, pack) {
   return walk(pack)
 }
 
-let lang = 'en'                 // set only by _setLangState, called from i18n.js setLang
+let lang = 'pt-BR'                 // set only by _setLangState, called from i18n.js setLang
 let dict = {}                   // current locale pack (empty = English fallback)
 let instr = null                // { exId: [steps] } for the current language, null = English
 let exerciseNames = null        // { exId: translated name }, null = original catalogue name

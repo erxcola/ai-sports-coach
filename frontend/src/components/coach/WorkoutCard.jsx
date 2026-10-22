@@ -8,6 +8,7 @@ import Icon from '../Icon.jsx';
 import { findCatalogueExercise } from '../../lib/ai/exercise-matcher.js';
 import { ExercisePreviewModal } from './ExercisePreviewModal.jsx';
 import { BeginnerGlossaryModal } from './BeginnerGlossaryModal.jsx';
+import ExerciseScienceModal from './ExerciseScienceModal.jsx';
 
 export function WorkoutCard({ plan }) {
   if (!plan) return null;
@@ -16,8 +17,18 @@ export function WorkoutCard({ plan }) {
   const [selectedRoutineIndex, setSelectedRoutineIndex] = useState(0);
   const [previewExercise, setPreviewExercise] = useState(null);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
+  const [scienceModalOpen, setScienceModalOpen] = useState(false);
+  const [scienceExerciseTarget, setScienceExerciseTarget] = useState(null);
 
   const activeRoutine = routines[selectedRoutineIndex] || routines[0];
+
+  const handleOpenScience = (exercise = null) => {
+    setScienceExerciseTarget(exercise ? {
+      name: exercise.name,
+      muscle: exercise.muscleGroup || ''
+    } : null);
+    setScienceModalOpen(true);
+  };
 
   // Open video preview for an exercise
   const handleOpenPreview = (exercise) => {
@@ -42,24 +53,44 @@ export function WorkoutCard({ plan }) {
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--orange)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Divisão {plan.splitType || 'ABC'}
           </span>
-          <button
-            onClick={() => setGlossaryOpen(true)}
-            style={{
-              background: 'var(--surface-2)',
-              border: 'var(--hair) solid var(--sep-op)',
-              color: 'var(--orange)',
-              padding: '4px 10px',
-              borderRadius: 20,
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4
-            }}
-          >
-            ❓ O que é RIR e Reps?
-          </button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={() => handleOpenScience(null)}
+              style={{
+                background: 'rgba(59, 130, 246, 0.12)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                color: '#60a5fa',
+                padding: '4px 10px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4
+              }}
+            >
+              🔬 Ciência & Marcos
+            </button>
+            <button
+              onClick={() => setGlossaryOpen(true)}
+              style={{
+                background: 'var(--surface-2)',
+                border: 'var(--hair) solid var(--sep-op)',
+                color: 'var(--orange)',
+                padding: '4px 10px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4
+              }}
+            >
+              ❓ O que é RIR?
+            </button>
+          </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12 }}>
@@ -156,8 +187,8 @@ export function WorkoutCard({ plan }) {
                   </span>
                 </div>
 
-                {/* Video Preview Button */}
-                <div style={{ marginBottom: 6 }}>
+                {/* Video Preview & Biomechanics Button */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
                   <button
                     onClick={() => handleOpenPreview(exercise)}
                     style={{
@@ -174,7 +205,25 @@ export function WorkoutCard({ plan }) {
                       gap: 6
                     }}
                   >
-                    ▶️ Ver Vídeo de Execução & Postura
+                    ▶️ Ver Vídeo
+                  </button>
+                  <button
+                    onClick={() => handleOpenScience(exercise)}
+                    style={{
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      border: '1px solid rgba(59, 130, 246, 0.25)',
+                      borderRadius: 8,
+                      padding: '6px 12px',
+                      color: '#60a5fa',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    🔬 Biomecânica & Cues
                   </button>
                 </div>
 
@@ -223,6 +272,17 @@ export function WorkoutCard({ plan }) {
       <BeginnerGlossaryModal
         isOpen={glossaryOpen}
         onClose={() => setGlossaryOpen(false)}
+      />
+
+      {/* Exercise Science & Biomechanics Modal */}
+      <ExerciseScienceModal
+        isOpen={scienceModalOpen}
+        onClose={() => {
+          setScienceModalOpen(false);
+          setScienceExerciseTarget(null);
+        }}
+        exerciseName={scienceExerciseTarget?.name || ''}
+        targetMuscle={scienceExerciseTarget?.muscle || ''}
       />
     </div>
   );
