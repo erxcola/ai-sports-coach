@@ -10,6 +10,7 @@ import { FOOD_SUBSTITUTIONS } from '../../lib/ai/food-substitutions.js';
 import { BeginnerGlossaryModal } from './BeginnerGlossaryModal.jsx';
 import { FoodSearchModal } from './FoodSearchModal.jsx';
 import RecipeBookModal from './RecipeBookModal.jsx';
+import ScientificEvidenceModal from './ScientificEvidenceModal.jsx';
 import { useUI } from '../../store/useUI.js';
 import { useStore } from '../../store/useStore.js';
 
@@ -38,6 +39,7 @@ export function NutritionCard({ plan }) {
   const [foodSearchTargetMeal, setFoodSearchTargetMeal] = useState(null);
   const [recipeBookTargetMeal, setRecipeBookTargetMeal] = useState(null);
   const [showFullRecipeBook, setShowFullRecipeBook] = useState(false);
+  const [scientificModalTopic, setScientificModalTopic] = useState(null);
 
   // Update meals schedule when mealCount changes
   const handleMealCountChange = (count) => {
@@ -183,28 +185,48 @@ export function NutritionCard({ plan }) {
     <div className="coach-nutrition-native">
       {/* 1. Header & Strategy Card */}
       <div className="coach-native-box" style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--acc)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {plan.strategy || 'Recomposição Corporal'}
           </span>
-          <button
-            onClick={() => setShowGlossary(true)}
-            style={{
-              background: 'var(--surface-2)',
-              border: 'var(--hair) solid var(--sep-op)',
-              color: 'var(--acc)',
-              padding: '4px 10px',
-              borderRadius: 20,
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4
-            }}
-          >
-            ❓ Entender Termos
-          </button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={() => setScientificModalTopic('ALL')}
+              style={{
+                background: 'var(--surface-2)',
+                border: 'var(--hair) solid var(--sep-op)',
+                color: 'var(--blue, #3b82f6)',
+                padding: '4px 10px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4
+              }}
+            >
+              🔬 Evidências PubMed
+            </button>
+            <button
+              onClick={() => setShowGlossary(true)}
+              style={{
+                background: 'var(--surface-2)',
+                border: 'var(--hair) solid var(--sep-op)',
+                color: 'var(--acc)',
+                padding: '4px 10px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4
+              }}
+            >
+              ❓ Entender Termos
+            </button>
+          </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12 }}>
@@ -218,8 +240,13 @@ export function NutritionCard({ plan }) {
 
         {/* Macro Progress Pills */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-          <div className="c-sub-metric">
-            <span className="c-sub-val" style={{ color: 'var(--blue)' }}>{targetMacros.protein}g</span>
+          <div
+            className="c-sub-metric"
+            onClick={() => setScientificModalTopic('protein_target')}
+            style={{ cursor: 'pointer' }}
+            title="Toque para ver a evidência científica de proteína no PubMed"
+          >
+            <span className="c-sub-val" style={{ color: 'var(--blue)' }}>{targetMacros.protein}g 🔬</span>
             <span className="c-sub-lbl">Proteína (P)</span>
           </div>
           <div className="c-sub-metric">
@@ -473,15 +500,39 @@ export function NutritionCard({ plan }) {
           iconTint="var(--blue)"
           title="Meta de Água Pura"
           subtitle={plan.hydration || `${((plan.weight || 75) * 40 / 1000).toFixed(1)} Litros ao longo do dia`}
+          onClick={() => setScientificModalTopic('hydration')}
         />
         {plan.jointSupport?.length > 0 && (
           <Row
             icon="shield"
             iconTint="var(--green)"
-            title="Suporte Articular"
+            title="Suporte Articular & Suplementação"
             subtitle={plan.jointSupport.join(' · ')}
+            onClick={() => setScientificModalTopic('omega3')}
           />
         )}
+        <div style={{ padding: '6px 14px 10px 14px' }}>
+          <button
+            onClick={() => setScientificModalTopic('creatine')}
+            style={{
+              width: '100%',
+              background: 'rgba(59, 130, 246, 0.1)',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              borderRadius: 8,
+              padding: '6px 10px',
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'var(--blue, #3b82f6)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6
+            }}
+          >
+            <span>🔬</span> Ver Respaldo Científico de Creatina, Ômega-3 & Vitamina D3 (PubMed)
+          </button>
+        </div>
       </Section>
 
       {/* 5. Individual Ingredient Substitution Modal */}
@@ -639,6 +690,13 @@ export function NutritionCard({ plan }) {
       <BeginnerGlossaryModal
         isOpen={showGlossary}
         onClose={() => setShowGlossary(false)}
+      />
+
+      {/* 10. Scientific Evidence & PubMed Grounding Modal */}
+      <ScientificEvidenceModal
+        isOpen={!!scientificModalTopic}
+        targetTopic={scientificModalTopic}
+        onClose={() => setScientificModalTopic(null)}
       />
     </div>
   );
